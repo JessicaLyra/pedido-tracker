@@ -1,6 +1,7 @@
 package com.jessicalyra.pedido_tracker.controller;
-
 import com.jessicalyra.pedido_tracker.model.Pedido;
+import com.jessicalyra.pedido_tracker.dto.PedidoRequest;
+import com.jessicalyra.pedido_tracker.dto.PedidoResponse;
 import com.jessicalyra.pedido_tracker.service.PedidoService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,8 +20,8 @@ public class PedidoController {
     }
 
     @PostMapping
-    public ResponseEntity<Pedido> criar(@RequestBody Pedido pedido) {
-        Pedido novoPedido = pedidoService.criar(pedido);
+    public ResponseEntity<PedidoResponse> criar(@RequestBody  PedidoRequest request) {
+        PedidoResponse novoPedido = pedidoService.criar(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -28,23 +29,23 @@ public class PedidoController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Pedido>> listarTodos() {
+    public ResponseEntity<List<PedidoResponse>> listarTodos() {
         return ResponseEntity.ok(pedidoService.listarTodos());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Pedido> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<PedidoResponse> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(pedidoService.buscarPorId(id));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Pedido> atualizar(
+   @PutMapping("/{id}")
+    public ResponseEntity<PedidoResponse> atualizar(
             @PathVariable Long id,
-            @RequestBody Pedido pedidoAtualizado
+            @RequestBody PedidoRequest request
     ) {
-        Pedido pedido = pedidoService.atualizar(id, pedidoAtualizado);
+        PedidoResponse pedidoAtualizado = pedidoService.atualizar(id, request);
 
-        return ResponseEntity.ok(pedido);
+        return ResponseEntity.ok(pedidoAtualizado);
     }
 
     @DeleteMapping("/{id}")

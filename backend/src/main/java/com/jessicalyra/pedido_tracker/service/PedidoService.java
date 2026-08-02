@@ -4,7 +4,8 @@ import com.jessicalyra.pedido_tracker.model.Pedido;
 import com.jessicalyra.pedido_tracker.repository.PedidoRepository;
 import com.jessicalyra.pedido_tracker.exception.PedidoNotFoundException;
 import org.springframework.stereotype.Service;
-
+import com.jessicalyra.pedido_tracker.dto.PedidoRequest;
+import com.jessicalyra.pedido_tracker.dto.PedidoResponse;
 import com.jessicalyra.pedido_tracker.model.User;
 import com.jessicalyra.pedido_tracker.repository.UserRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,7 +24,7 @@ public class PedidoService {
         this.userRepository = userRepository;
     }
 
-    public Pedido criar(Pedido pedido) {
+    public PedidoResponse criar(PedidoRequest request) {
 
         String email = SecurityContextHolder
                 .getContext()
@@ -34,12 +35,26 @@ public class PedidoService {
                 .findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
+        Pedido pedido = new Pedido();
+
+        pedido.setNumero(request.getNumero());
+        pedido.setDescricao(request.getDescricao());
+        pedido.setStatus(request.getStatus());
+        pedido.setDataCriacao(request.getDataCriacao());
         pedido.setUsuario(usuario);
 
-        return pedidoRepository.save(pedido);
+        Pedido pedidoSalvo = pedidoRepository.save(pedido);
+
+        return new PedidoResponse(
+                pedidoSalvo.getId(),
+                pedidoSalvo.getNumero(),
+                pedidoSalvo.getDescricao(),
+                pedidoSalvo.getStatus(),
+                pedidoSalvo.getDataCriacao()
+        );
     }
 
-    public List<Pedido> listarTodos() {
+    public List<PedidoResponse> listarTodos() {
 
         String email = SecurityContextHolder
                 .getContext()
@@ -50,24 +65,19 @@ public class PedidoService {
                 .findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        return pedidoRepository.findByUsuario(usuario);
-    }
-    public Pedido buscarPorId(Long id) {
-
-        String email = SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getName();
-
-        User usuario = userRepository
-                .findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
-
-        return pedidoRepository.findByIdAndUsuario(id, usuario)
-                .orElseThrow(() -> new PedidoNotFoundException("Pedido não encontrado"));
+        return pedidoRepository.findByUsuario(usuario)
+                .stream()
+                .map(pedido -> new PedidoResponse(
+                        pedido.getId(),
+                        pedido.getNumero(),
+                        pedido.getDescricao(),
+                        pedido.getStatus(),
+                        pedido.getDataCriacao()
+                ))
+                .toList();
     }
 
-    public Pedido atualizar(Long id, Pedido pedidoAtualizado) {
+    public PedidoResponse buscarPorId(Long id) {
 
         String email = SecurityContextHolder
                 .getContext()
@@ -81,12 +91,43 @@ public class PedidoService {
         Pedido pedido = pedidoRepository.findByIdAndUsuario(id, usuario)
                 .orElseThrow(() -> new PedidoNotFoundException("Pedido não encontrado"));
 
-        pedido.setNumero(pedidoAtualizado.getNumero());
-        pedido.setDescricao(pedidoAtualizado.getDescricao());
-        pedido.setStatus(pedidoAtualizado.getStatus());
-        pedido.setDataCriacao(pedidoAtualizado.getDataCriacao());
+        return new PedidoResponse(
+                pedido.getId(),
+                pedido.getNumero(),
+                pedido.getDescricao(),
+                pedido.getStatus(),
+                pedido.getDataCriacao()
+        );
+    }
 
-        return pedidoRepository.save(pedido);
+   public PedidoResponse atualizar(Long id, PedidoRequest request) {
+
+        String email = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
+
+        User usuario = userRepository
+                .findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        Pedido pedido = pedidoRepository.findByIdAndUsuario(id, usuario)
+                .orElseThrow(() -> new PedidoNotFoundException("Pedido não encontrado"));
+
+        pedido.setNumero(request.getNumero());
+        pedido.setDescricao(request.getDescricao());
+        pedido.setStatus(request.getStatus());
+        pedido.setDataCriacao(request.getDataCriacao());
+
+        Pedido pedidoAtualizado = pedidoRepository.save(pedido);
+
+        return new PedidoResponse(
+                pedidoAtualizado.getId(),
+                pedidoAtualizado.getNumero(),
+                pedidoAtualizado.getDescricao(),
+                pedidoAtualizado.getStatus(),
+                pedidoAtualizado.getDataCriacao()
+        );
     }
 
     public void excluir(Long id) {
