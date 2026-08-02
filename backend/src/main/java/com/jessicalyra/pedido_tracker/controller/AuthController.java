@@ -2,6 +2,7 @@ package com.jessicalyra.pedido_tracker.controller;
 
 import com.jessicalyra.pedido_tracker.dto.RegisterRequest;
 import com.jessicalyra.pedido_tracker.dto.LoginRequest;
+import com.jessicalyra.pedido_tracker.dto.LoginResponse;
 import com.jessicalyra.pedido_tracker.service.AuthService;
 import com.jessicalyra.pedido_tracker.exception.InvalidCredentialsException;
 import com.jessicalyra.pedido_tracker.exception.EmailAlreadyExistsException;
@@ -28,9 +29,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequest request) {
-        authService.login(request);
-        return ResponseEntity.ok("Login realizado com sucesso");
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+        LoginResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
     }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)

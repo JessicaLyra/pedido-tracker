@@ -2,6 +2,7 @@ package com.jessicalyra.pedido_tracker.service;
 
 import com.jessicalyra.pedido_tracker.dto.RegisterRequest;
 import com.jessicalyra.pedido_tracker.dto.LoginRequest;
+import com.jessicalyra.pedido_tracker.dto.LoginResponse;
 import com.jessicalyra.pedido_tracker.model.User;
 import com.jessicalyra.pedido_tracker.repository.UserRepository;
 import com.jessicalyra.pedido_tracker.exception.EmailAlreadyExistsException;
@@ -39,7 +40,7 @@ public class AuthService {
         return userRepository.save(user);
     }
 
-    public User login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new InvalidCredentialsException("E-mail ou senha inválidos"));
@@ -48,6 +49,10 @@ public class AuthService {
             throw new InvalidCredentialsException("E-mail ou senha inválidos");
         }
 
-        return user;
+        return new LoginResponse(
+        user.getId(),
+        user.getNome(),
+        user.getEmail()
+        );
     }
 }
