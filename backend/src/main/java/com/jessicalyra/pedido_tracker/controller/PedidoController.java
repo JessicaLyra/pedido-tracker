@@ -1,12 +1,11 @@
 package com.jessicalyra.pedido_tracker.controller;
-import com.jessicalyra.pedido_tracker.model.Pedido;
 import com.jessicalyra.pedido_tracker.dto.PedidoRequest;
 import com.jessicalyra.pedido_tracker.dto.PedidoResponse;
 import com.jessicalyra.pedido_tracker.service.PedidoService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -20,7 +19,7 @@ public class PedidoController {
     }
 
     @PostMapping
-    public ResponseEntity<PedidoResponse> criar(@RequestBody  PedidoRequest request) {
+    public ResponseEntity<PedidoResponse> criar(@Valid @RequestBody  PedidoRequest request) {
         PedidoResponse novoPedido = pedidoService.criar(request);
 
         return ResponseEntity
@@ -41,7 +40,7 @@ public class PedidoController {
    @PutMapping("/{id}")
     public ResponseEntity<PedidoResponse> atualizar(
             @PathVariable Long id,
-            @RequestBody PedidoRequest request
+            @Valid @RequestBody PedidoRequest request
     ) {
         PedidoResponse pedidoAtualizado = pedidoService.atualizar(id, request);
 

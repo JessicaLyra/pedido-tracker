@@ -1,12 +1,21 @@
 package com.jessicalyra.pedido_tracker.dto;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
 public class PedidoRequest {
 
+    @NotBlank(message = "O número do pedido é obrigatório")
     private String numero;
+
+    @NotBlank(message = "A descrição do pedido é obrigatória")
     private String descricao;
+
+    @NotBlank(message = "O status do pedido é obrigatório")
     private String status;
+
+    @NotNull(message = "A data de criação é obrigatória")
     private LocalDateTime dataCriacao;
 
     public PedidoRequest() {
