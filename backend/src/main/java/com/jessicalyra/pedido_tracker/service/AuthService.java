@@ -1,11 +1,14 @@
 package com.jessicalyra.pedido_tracker.service;
 
 import com.jessicalyra.pedido_tracker.dto.RegisterRequest;
+import com.jessicalyra.pedido_tracker.dto.LoginRequest;
 import com.jessicalyra.pedido_tracker.model.User;
 import com.jessicalyra.pedido_tracker.repository.UserRepository;
+import com.jessicalyra.pedido_tracker.exception.EmailAlreadyExistsException;
+import com.jessicalyra.pedido_tracker.exception.InvalidCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import com.jessicalyra.pedido_tracker.exception.EmailAlreadyExistsException;
+
 
 @Service
 public class AuthService {
@@ -34,5 +37,17 @@ public class AuthService {
         user.setSenha(passwordEncoder.encode(request.getSenha()));
 
         return userRepository.save(user);
+    }
+
+    public User login(LoginRequest request) {
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new InvalidCredentialsException("E-mail ou senha inválidos"));
+
+        if (!passwordEncoder.matches(request.getSenha(), user.getSenha())) {
+            throw new InvalidCredentialsException("E-mail ou senha inválidos");
+        }
+
+        return user;
     }
 }
