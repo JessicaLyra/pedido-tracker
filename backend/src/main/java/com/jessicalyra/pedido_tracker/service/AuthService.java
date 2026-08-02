@@ -5,6 +5,7 @@ import com.jessicalyra.pedido_tracker.model.User;
 import com.jessicalyra.pedido_tracker.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.jessicalyra.pedido_tracker.exception.EmailAlreadyExistsException;
 
 @Service
 public class AuthService {
@@ -23,7 +24,7 @@ public class AuthService {
     public User register(RegisterRequest request) {
 
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("E-mail já cadastrado");
+            throw new EmailAlreadyExistsException("E-mail já cadastrado");
         }
 
         User user = new User();
