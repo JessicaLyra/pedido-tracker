@@ -7,7 +7,7 @@ import {
   Alert,
   Box,
   Button,
-  Container,
+  CircularProgress,
   Divider,
   IconButton,
   Paper,
@@ -74,6 +74,10 @@ function NovoPedido() {
   }
 
   function voltar() {
+    if (salvando) {
+      return;
+    }
+
     navigate("/pedidos");
   }
 
@@ -102,7 +106,7 @@ function NovoPedido() {
     }
 
     const quantidadeInvalida = itens.some(
-      (item) => !item.quantidade || item.quantidade < 1
+      (item) => !item.quantidade || Number(item.quantidade) < 1
     );
 
     if (quantidadeInvalida) {
@@ -142,7 +146,11 @@ function NovoPedido() {
       console.error("Erro ao criar pedido:", error);
 
       if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("usuario");
+
         setErro("Sua sessão expirou. Faça login novamente.");
+        navigate("/login");
         return;
       }
 
@@ -167,119 +175,160 @@ function NovoPedido() {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
         width: "100%",
+        minHeight: "100%",
         backgroundColor: "#FFFFFF",
       }}
     >
-      <Container
-        maxWidth={false}
+      {/* =====================================================
+          CONTEÚDO DA PÁGINA
+          A Sidebar fica no layout principal.
+          Esta página ocupa somente a área disponível.
+      ====================================================== */}
+
+      <Box
+        component="main"
         sx={{
+          width: "100%",
           px: {
             xs: 2,
             sm: 3,
-            md: 4,
-            lg: 5,
+            md: 5,
+            lg: 6,
+            xl: 8,
           },
           py: {
             xs: 3,
-            md: 4,
+            md: 5,
           },
+          boxSizing: "border-box",
         }}
       >
-        {/* CABEÇALHO */}
+        {/* =====================================================
+            CABEÇALHO
+        ====================================================== */}
 
-        <Stack
-          direction={{
-            xs: "column",
-            sm: "row",
+        <Box
+          sx={{
+            width: "100%",
+            mb: 4,
           }}
-          spacing={2}
-          alignItems={{
-            xs: "flex-start",
-            sm: "center",
-          }}
-          mb={4}
         >
-          <IconButton
-            onClick={voltar}
-            sx={{
-              width: 38,
-              height: 38,
-              border: "1px solid #E5E5E5",
-              borderRadius: "7px",
-              color: "#525252",
-
-              "&:hover": {
-                backgroundColor: "#FFF7ED",
-                borderColor: "#FF7800",
-                color: "#FF7800",
-              },
-            }}
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1.5}
           >
-            <ArrowBackOutlinedIcon fontSize="small" />
-          </IconButton>
+            {/* VOLTAR */}
 
-          <Box>
-            <Typography
+            <IconButton
+              onClick={voltar}
+              disabled={salvando}
+              aria-label="Voltar para pedidos"
               sx={{
-                fontSize: {
-                  xs: 25,
-                  md: 28,
+                width: 38,
+                height: 38,
+                flexShrink: 0,
+                border: "1px solid #E5E5E5",
+                borderRadius: "8px",
+                color: "#525252",
+
+                "&:hover": {
+                  backgroundColor: "#FFF7ED",
+                  borderColor: "#FF7800",
+                  color: "#FF7800",
                 },
-                fontWeight: 700,
-                color: "#171717",
-                letterSpacing: "-0.5px",
+
+                "&:disabled": {
+                  color: "#D4D4D4",
+                  borderColor: "#EEEEEE",
+                },
               }}
             >
-              Novo pedido
-            </Typography>
+              <ArrowBackOutlinedIcon
+                sx={{
+                  fontSize: 19,
+                }}
+              />
+            </IconButton>
 
-            <Typography
+            {/* TÍTULO */}
+
+            <Box
               sx={{
-                mt: 0.5,
-                fontSize: 13,
-                color: "#737373",
+                minWidth: 0,
               }}
             >
-              Cadastre um novo pedido para a operação.
-            </Typography>
-          </Box>
-        </Stack>
+              <Typography
+                sx={{
+                  fontSize: {
+                    xs: 26,
+                    md: 30,
+                  },
+                  fontWeight: 700,
+                  color: "#171717",
+                  letterSpacing: "-0.8px",
+                  lineHeight: 1.2,
+                }}
+              >
+                Novo pedido
+              </Typography>
 
-        {/* FORMULÁRIO */}
+              <Typography
+                sx={{
+                  mt: 0.7,
+                  fontSize: 13,
+                  color: "#737373",
+                }}
+              >
+                Cadastre um novo pedido para a operação.
+              </Typography>
+            </Box>
+          </Stack>
+        </Box>
+
+        {/* =====================================================
+            FORMULÁRIO
+        ====================================================== */}
 
         <Box
           component="form"
           onSubmit={salvarPedido}
           sx={{
-            maxWidth: 1000,
+            width: "100%",
+            maxWidth: 1100,
           }}
         >
-          {/* DADOS DO CLIENTE */}
+          {/* =================================================
+              DADOS DO CLIENTE
+          ================================================== */}
 
           <Paper
             elevation={0}
             sx={{
+              width: "100%",
               border: "1px solid #E5E5E5",
-              borderRadius: "8px",
+              borderRadius: "10px",
               overflow: "hidden",
+              backgroundColor: "#FFFFFF",
             }}
           >
+            {/* CABEÇALHO DO CARD */}
+
             <Box
               sx={{
                 px: {
-                  xs: 2,
+                  xs: 2.5,
                   md: 3,
                 },
                 py: 2,
-                backgroundColor: "#FAFAFA",
                 borderBottom: "1px solid #E5E5E5",
+                backgroundColor: "#FFFFFF",
               }}
             >
               <Typography
                 sx={{
-                  fontSize: 14,
+                  fontSize: 15,
                   fontWeight: 700,
                   color: "#171717",
                 }}
@@ -289,7 +338,7 @@ function NovoPedido() {
 
               <Typography
                 sx={{
-                  mt: 0.3,
+                  mt: 0.4,
                   fontSize: 12,
                   color: "#737373",
                 }}
@@ -298,15 +347,29 @@ function NovoPedido() {
               </Typography>
             </Box>
 
+            {/* CAMPOS */}
+
             <Box
               sx={{
-                p: {
-                  xs: 2,
+                px: {
+                  xs: 2.5,
                   md: 3,
                 },
+                py: 3,
               }}
             >
-              <Stack spacing={2.5}>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    md: "1fr 1.4fr",
+                  },
+                  gap: 2,
+                }}
+              >
+                {/* CLIENTE */}
+
                 <TextField
                   label="Cliente"
                   placeholder="Nome do cliente"
@@ -316,7 +379,11 @@ function NovoPedido() {
                   }
                   fullWidth
                   size="small"
+                  disabled={salvando}
+                  sx={estiloCampo}
                 />
+
+                {/* ENDEREÇO */}
 
                 <TextField
                   label="Endereço de entrega"
@@ -327,7 +394,11 @@ function NovoPedido() {
                   }
                   fullWidth
                   size="small"
+                  disabled={salvando}
+                  sx={estiloCampo}
                 />
+
+                {/* OBSERVAÇÕES */}
 
                 <TextField
                   label="Observações"
@@ -340,42 +411,58 @@ function NovoPedido() {
                   multiline
                   minRows={3}
                   size="small"
+                  disabled={salvando}
+                  sx={{
+                    ...estiloCampo,
+
+                    gridColumn: {
+                      xs: "auto",
+                      md: "1 / -1",
+                    },
+                  }}
                 />
-              </Stack>
+              </Box>
             </Box>
           </Paper>
 
-          {/* ITENS */}
+          {/* =================================================
+              ITENS DO PEDIDO
+          ================================================== */}
 
           <Paper
             elevation={0}
             sx={{
+              width: "100%",
               mt: 3,
               border: "1px solid #E5E5E5",
-              borderRadius: "8px",
+              borderRadius: "10px",
               overflow: "hidden",
+              backgroundColor: "#FFFFFF",
             }}
           >
+            {/* CABEÇALHO */}
+
             <Box
               sx={{
                 px: {
-                  xs: 2,
+                  xs: 2.5,
                   md: 3,
                 },
                 py: 2,
-                backgroundColor: "#FAFAFA",
                 borderBottom: "1px solid #E5E5E5",
+                backgroundColor: "#FFFFFF",
               }}
             >
               <Stack
                 direction="row"
                 justifyContent="space-between"
                 alignItems="center"
+                spacing={2}
               >
                 <Box>
                   <Typography
                     sx={{
-                      fontSize: 14,
+                      fontSize: 15,
                       fontWeight: 700,
                       color: "#171717",
                     }}
@@ -385,7 +472,7 @@ function NovoPedido() {
 
                   <Typography
                     sx={{
-                      mt: 0.3,
+                      mt: 0.4,
                       fontSize: 12,
                       color: "#737373",
                     }}
@@ -394,21 +481,37 @@ function NovoPedido() {
                   </Typography>
                 </Box>
 
-                <ShoppingBagOutlinedIcon
+                <Box
                   sx={{
+                    width: 36,
+                    height: 36,
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "8px",
+                    backgroundColor: "#FFF7ED",
                     color: "#FF7800",
-                    fontSize: 23,
                   }}
-                />
+                >
+                  <ShoppingBagOutlinedIcon
+                    sx={{
+                      fontSize: 20,
+                    }}
+                  />
+                </Box>
               </Stack>
             </Box>
 
+            {/* LISTA DE ITENS */}
+
             <Box
               sx={{
-                p: {
-                  xs: 2,
+                px: {
+                  xs: 2.5,
                   md: 3,
                 },
+                py: 3,
               }}
             >
               <Stack spacing={2}>
@@ -419,12 +522,14 @@ function NovoPedido() {
                       display: "grid",
                       gridTemplateColumns: {
                         xs: "1fr",
-                        sm: "1fr 130px 42px",
+                        sm: "minmax(0, 1fr) 130px 40px",
                       },
                       gap: 1.5,
                       alignItems: "center",
                     }}
                   >
+                    {/* PRODUTO */}
+
                     <TextField
                       label={
                         index === 0
@@ -442,39 +547,55 @@ function NovoPedido() {
                       }
                       size="small"
                       fullWidth
+                      disabled={salvando}
+                      sx={estiloCampo}
                     />
+
+                    {/* QUANTIDADE */}
 
                     <TextField
                       label="Quantidade"
                       type="number"
                       value={item.quantidade}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const valor = Number(
+                          event.target.value
+                        );
+
                         alterarItem(
                           item.id,
                           "quantidade",
-                          Math.max(
-                            1,
-                            Number(event.target.value)
-                          )
-                        )
-                      }
+                          valor < 1 ? 1 : valor
+                        );
+                      }}
                       size="small"
+                      fullWidth
+                      disabled={salvando}
                       inputProps={{
                         min: 1,
                       }}
+                      sx={estiloCampo}
                     />
+
+                    {/* REMOVER */}
 
                     <IconButton
                       type="button"
                       onClick={() =>
                         removerItem(item.id)
                       }
-                      disabled={itens.length === 1}
+                      disabled={
+                        itens.length === 1 || salvando
+                      }
+                      aria-label={`Remover ${
+                        item.nome || "item"
+                      }`}
                       sx={{
                         width: 40,
                         height: 40,
+                        borderRadius: "7px",
                         color:
-                          itens.length === 1
+                          itens.length === 1 || salvando
                             ? "#D4D4D4"
                             : "#737373",
 
@@ -484,18 +605,25 @@ function NovoPedido() {
                         },
                       }}
                     >
-                      <DeleteOutlineOutlinedIcon fontSize="small" />
+                      <DeleteOutlineOutlinedIcon
+                        sx={{
+                          fontSize: 19,
+                        }}
+                      />
                     </IconButton>
                   </Box>
                 ))}
 
-                <Divider />
+                <Divider sx={{ my: 0.5 }} />
+
+                {/* ADICIONAR ITEM */}
 
                 <Button
                   type="button"
                   variant="outlined"
                   startIcon={<AddOutlinedIcon />}
                   onClick={adicionarItem}
+                  disabled={salvando}
                   sx={{
                     alignSelf: "flex-start",
                     height: 38,
@@ -511,6 +639,11 @@ function NovoPedido() {
                       borderColor: "#E96800",
                       backgroundColor: "#FFF7ED",
                     },
+
+                    "&:disabled": {
+                      borderColor: "#E5E5E5",
+                      color: "#A3A3A3",
+                    },
                   }}
                 >
                   Adicionar item
@@ -519,21 +652,26 @@ function NovoPedido() {
             </Box>
           </Paper>
 
-          {/* ERRO */}
+          {/* =================================================
+              ERRO
+          ================================================== */}
 
           {erro && (
             <Alert
               severity="error"
               sx={{
                 mt: 3,
-                borderRadius: "7px",
+                borderRadius: "8px",
+                fontSize: 13,
               }}
             >
               {erro}
             </Alert>
           )}
 
-          {/* AÇÕES */}
+          {/* =================================================
+              AÇÕES
+          ================================================== */}
 
           <Stack
             direction={{
@@ -544,6 +682,8 @@ function NovoPedido() {
             spacing={1.5}
             mt={3}
           >
+            {/* CANCELAR */}
+
             <Button
               type="button"
               variant="outlined"
@@ -553,14 +693,14 @@ function NovoPedido() {
                 height: 40,
                 px: 2.5,
                 borderRadius: "7px",
-                borderColor: "#DCDCDC",
+                borderColor: "#E5E5E5",
                 color: "#525252",
                 textTransform: "none",
                 fontSize: 13,
                 fontWeight: 600,
 
                 "&:hover": {
-                  borderColor: "#BDBDBD",
+                  borderColor: "#D4D4D4",
                   backgroundColor: "#FAFAFA",
                 },
               }}
@@ -568,10 +708,22 @@ function NovoPedido() {
               Cancelar
             </Button>
 
+            {/* CRIAR PEDIDO */}
+
             <Button
               type="submit"
               variant="contained"
               disabled={salvando}
+              startIcon={
+                salvando ? (
+                  <CircularProgress
+                    size={16}
+                    sx={{
+                      color: "#FFFFFF",
+                    }}
+                  />
+                ) : null
+              }
               sx={{
                 height: 40,
                 px: 2.5,
@@ -586,15 +738,58 @@ function NovoPedido() {
                   backgroundColor: "#E96800",
                   boxShadow: "none",
                 },
+
+                "&:disabled": {
+                  backgroundColor: "#FDBA74",
+                  color: "#FFFFFF",
+                },
               }}
             >
               {salvando ? "Criando..." : "Criar pedido"}
             </Button>
           </Stack>
         </Box>
-      </Container>
+      </Box>
     </Box>
   );
 }
+
+/* =========================================================
+   ESTILO DOS CAMPOS
+========================================================= */
+
+const estiloCampo = {
+  "& .MuiInputLabel-root": {
+    fontSize: 13,
+    color: "#737373",
+  },
+
+  "& .MuiInputLabel-root.Mui-focused": {
+    color: "#FF7800",
+  },
+
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "7px",
+    fontSize: 13,
+    backgroundColor: "#FFFFFF",
+
+    "& fieldset": {
+      borderColor: "#E5E5E5",
+    },
+
+    "&:hover fieldset": {
+      borderColor: "#D4D4D4",
+    },
+
+    "&.Mui-focused fieldset": {
+      borderColor: "#FF7800",
+      borderWidth: "1px",
+    },
+
+    "&.Mui-disabled": {
+      backgroundColor: "#FAFAFA",
+    },
+  },
+};
 
 export default NovoPedido;
