@@ -1,33 +1,35 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import api from "../services/api";
 
 import {
   Alert,
   Box,
   Button,
-  Chip,
   CircularProgress,
   Container,
-  InputAdornment,
+  Divider,
+  FormControl,
   MenuItem,
+  Paper,
   Select,
   Stack,
-  TextField,
   Typography,
 } from "@mui/material";
 
-import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
-import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import ShoppingBagOutlinedIcon from "@mui/icons-material/ShoppingBagOutlined";
+import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
+import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 
 function Pedidos() {
+  const navigate = useNavigate();
+
   const [pedidos, setPedidos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
+  const [alterandoStatus, setAlterandoStatus] = useState(null);
   const [busca, setBusca] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState("TODOS");
 
   useEffect(() => {
     carregarPedidos();
@@ -40,6 +42,11 @@ function Pedidos() {
 
       const token = localStorage.getItem("token");
 
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
       const response = await api.get("/orders", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -48,90 +55,101 @@ function Pedidos() {
 
       setPedidos(response.data);
     } catch (error) {
-      console.error(error);
+      console.error("Erro ao carregar pedidos:", error);
+
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+
       setErro("Não foi possível carregar os pedidos.");
     } finally {
       setCarregando(false);
     }
   }
 
-  const pedidosFiltrados = useMemo(() => {
-    const termo = busca.toLowerCase().trim();
+  async function alterarStatus(id, novoStatus) {
+    try {
+      setAlterandoStatus(id);
+      setErro("");
 
-    return pedidos.filter((pedido) => {
-      const correspondeBusca =
-        !termo ||
-        String(pedido.id).includes(termo) ||
-        pedido.cliente?.toLowerCase().includes(termo) ||
-        pedido.enderecoEntrega?.toLowerCase().includes(termo);
+      const token = localStorage.getItem("token");
 
-      const correspondeStatus =
-        filtroStatus === "TODOS" ||
-        pedido.status === filtroStatus;
+      await api.put(
+        `/orders/${id}/status`,
+        {
+          status: novoStatus,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      return correspondeBusca && correspondeStatus;
-    });
-  }, [pedidos, busca, filtroStatus]);
+      setPedidos((pedidosAtuais) =>
+        pedidosAtuais.map((pedido) =>
+          pedido.id === id
+            ? {
+                ...pedido,
+                status: novoStatus,
+              }
+            : pedido
+        )
+      );
+    } catch (error) {
+      console.error("Erro ao alterar status:", error);
 
-  function statusConfig(status) {
-    const configuracoes = {
-      RECEBIDO: {
-        label: "Recebido",
-        color: "#EA580C",
-        background: "#FFF7ED",
-      },
-
-      EM_PREPARO: {
-        label: "Em preparo",
-        color: "#2563EB",
-        background: "#EFF6FF",
-      },
-
-      SAIU_PARA_ENTREGA: {
-        label: "Saiu para entrega",
-        color: "#7C3AED",
-        background: "#F5F3FF",
-      },
-
-      ENTREGUE: {
-        label: "Entregue",
-        color: "#16A34A",
-        background: "#F0FDF4",
-      },
-
-      CANCELADO: {
-        label: "Cancelado",
-        color: "#DC2626",
-        background: "#FEF2F2",
-      },
-    };
-
-    return (
-      configuracoes[status] || {
-        label: status,
-        color: "#64748B",
-        background: "#F8FAFC",
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
       }
-    );
+
+      setErro("Não foi possível atualizar o status do pedido.");
+    } finally {
+      setAlterandoStatus(null);
+    }
   }
 
-  const totalPedidos = pedidos.length;
+  function formatarStatus(status) {
+    const statusMap = {
+      RECEBIDO: "Recebido",
+      EM_PREPARO: "Em preparo",
+      SAIU_PARA_ENTREGA: "Saiu para entrega",
+      ENTREGUE: "Entregue",
+      CANCELADO: "Cancelado",
+    };
 
-  const recebidos = pedidos.filter(
-    (pedido) => pedido.status === "RECEBIDO"
-  ).length;
+    return statusMap[status] || status;
+  }
 
-  const emPreparo = pedidos.filter(
-    (pedido) => pedido.status === "EM_PREPARO"
-  ).length;
+  function corStatus(status) {
+    const cores = {
+      RECEBIDO: "#FF7800",
+      EM_PREPARO: "#D97706",
+      SAIU_PARA_ENTREGA: "#2563EB",
+      ENTREGUE: "#16A34A",
+      CANCELADO: "#DC2626",
+    };
 
-  const emEntrega = pedidos.filter(
-    (pedido) => pedido.status === "SAIU_PARA_ENTREGA"
-  ).length;
+    return cores[status] || "#737373";
+  }
 
-  const entregues = pedidos.filter(
-    (pedido) => pedido.status === "ENTREGUE"
-  ).length;
+  const pedidosFiltrados = pedidos.filter((pedido) => {
+    const termo = busca.toLowerCase().trim();
+
+    if (!termo) {
+      return true;
+    }
+
+    return (
+      String(pedido.id).includes(termo) ||
+      pedido.cliente?.toLowerCase().includes(termo) ||
+      pedido.enderecoEntrega?.toLowerCase().includes(termo)
+    );
+  });
 
   return (
     <Box
@@ -139,7 +157,6 @@ function Pedidos() {
         minHeight: "100vh",
         width: "100%",
         backgroundColor: "#FFFFFF",
-        color: "#171717",
       }}
     >
       <Container
@@ -164,15 +181,15 @@ function Pedidos() {
         <Stack
           direction={{
             xs: "column",
-            sm: "row",
+            lg: "row",
           }}
           justifyContent="space-between"
           alignItems={{
-            xs: "flex-start",
-            sm: "center",
+            xs: "stretch",
+            lg: "center",
           }}
-          spacing={2}
-          mb={3}
+          spacing={3}
+          mb={4}
         >
           <Box>
             <Typography
@@ -196,217 +213,210 @@ function Pedidos() {
                 color: "#737373",
               }}
             >
-              Gerencie todos os pedidos da operação.
+              Acompanhe e gerencie os pedidos da operação.
             </Typography>
           </Box>
 
-          <Button
-            variant="contained"
-            startIcon={<AddOutlinedIcon />}
-            sx={{
-              height: 40,
-              px: 2,
-              borderRadius: "7px",
-              textTransform: "none",
-              fontSize: 13,
-              fontWeight: 600,
-              backgroundColor: "#FF7800",
-              boxShadow: "none",
-
-              "&:hover": {
-                backgroundColor: "#E96800",
-                boxShadow: "none",
-              },
-            }}
-          >
-            Novo Pedido
-          </Button>
-        </Stack>
-
-        {/* =====================================================
-            INDICADORES
-        ====================================================== */}
-
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr 1fr",
-              sm: "repeat(5, 1fr)",
-            },
-            border: "1px solid #E5E5E5",
-            borderRadius: "8px",
-            overflow: "hidden",
-            mb: 3,
-          }}
-        >
-          <Indicador
-            titulo="Total de pedidos"
-            valor={totalPedidos}
-            destaque
-          />
-
-          <Indicador
-            titulo="Recebidos"
-            valor={recebidos}
-            cor="#EA580C"
-          />
-
-          <Indicador
-            titulo="Em preparo"
-            valor={emPreparo}
-            cor="#2563EB"
-          />
-
-          <Indicador
-            titulo="Em entrega"
-            valor={emEntrega}
-            cor="#7C3AED"
-          />
-
-          <Indicador
-            titulo="Entregues"
-            valor={entregues}
-            cor="#16A34A"
-          />
-        </Box>
-
-        {/* =====================================================
-            FILTROS
-        ====================================================== */}
-
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: {
-              xs: "column",
-              md: "row",
-            },
-            justifyContent: "space-between",
-            gap: 1.5,
-            mb: 2,
-          }}
-        >
-          <TextField
-            value={busca}
-            onChange={(event) => setBusca(event.target.value)}
-            placeholder="Buscar pedidos..."
-            size="small"
-            sx={{
-              width: {
-                xs: "100%",
-                md: 340,
-              },
-
-              "& .MuiOutlinedInput-root": {
-                height: 40,
-                borderRadius: "7px",
-                fontSize: 13,
-                backgroundColor: "#FFFFFF",
-
-                "& fieldset": {
-                  borderColor: "#DCDCDC",
-                },
-
-                "&:hover fieldset": {
-                  borderColor: "#BDBDBD",
-                },
-
-                "&.Mui-focused fieldset": {
-                  borderColor: "#FF7800",
-                },
-              },
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchOutlinedIcon
-                    sx={{
-                      fontSize: 19,
-                      color: "#8A8A8A",
-                    }}
-                  />
-                </InputAdornment>
-              ),
-            }}
-          />
-
           <Stack
-            direction="row"
-            spacing={1}
+            direction={{
+              xs: "column",
+              sm: "row",
+            }}
+            spacing={1.5}
           >
-            <Select
-              value={filtroStatus}
-              onChange={(event) =>
-                setFiltroStatus(event.target.value)
-              }
-              size="small"
+            {/* BUSCA */}
+
+            <Box
               sx={{
-                height: 40,
-                minWidth: 160,
-                borderRadius: "7px",
-                fontSize: 13,
-                backgroundColor: "#FFFFFF",
-
-                "& fieldset": {
-                  borderColor: "#DCDCDC",
-                },
-
-                "&:hover fieldset": {
-                  borderColor: "#BDBDBD",
+                position: "relative",
+                minWidth: {
+                  xs: "100%",
+                  sm: 230,
                 },
               }}
             >
-              <MenuItem value="TODOS">
-                Todos os status
-              </MenuItem>
+              <SearchOutlinedIcon
+                sx={{
+                  position: "absolute",
+                  left: 12,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "#A3A3A3",
+                  fontSize: 19,
+                  pointerEvents: "none",
+                }}
+              />
 
-              <MenuItem value="RECEBIDO">
-                Recebido
-              </MenuItem>
+              <Box
+                component="input"
+                value={busca}
+                onChange={(event) =>
+                  setBusca(event.target.value)
+                }
+                placeholder="Buscar pedido..."
+                sx={{
+                  width: "100%",
+                  height: 40,
+                  boxSizing: "border-box",
+                  border: "1px solid #E5E5E5",
+                  borderRadius: "7px",
+                  outline: "none",
+                  backgroundColor: "#FFFFFF",
+                  padding: "0 12px 0 38px",
+                  fontSize: 13,
+                  color: "#171717",
+                  fontFamily: "inherit",
 
-              <MenuItem value="EM_PREPARO">
-                Em preparo
-              </MenuItem>
+                  "&::placeholder": {
+                    color: "#A3A3A3",
+                  },
 
-              <MenuItem value="SAIU_PARA_ENTREGA">
-                Saiu para entrega
-              </MenuItem>
+                  "&:focus": {
+                    borderColor: "#FF7800",
+                  },
+                }}
+              />
+            </Box>
 
-              <MenuItem value="ENTREGUE">
-                Entregue
-              </MenuItem>
-
-              <MenuItem value="CANCELADO">
-                Cancelado
-              </MenuItem>
-            </Select>
+            {/* ATUALIZAR */}
 
             <Button
               variant="outlined"
+              startIcon={<RefreshOutlinedIcon />}
               onClick={carregarPedidos}
               disabled={carregando}
-              startIcon={<RefreshOutlinedIcon />}
               sx={{
                 height: 40,
+                px: 2,
                 borderRadius: "7px",
+                borderColor: "#E5E5E5",
+                color: "#525252",
                 textTransform: "none",
                 fontSize: 13,
                 fontWeight: 600,
-                color: "#525252",
-                borderColor: "#DCDCDC",
-                backgroundColor: "#FFFFFF",
+                whiteSpace: "nowrap",
 
                 "&:hover": {
-                  borderColor: "#BDBDBD",
+                  borderColor: "#D4D4D4",
                   backgroundColor: "#FAFAFA",
                 },
               }}
             >
               Atualizar
             </Button>
+
+            {/* NOVO PEDIDO */}
+
+            <Button
+              variant="contained"
+              startIcon={<AddOutlinedIcon />}
+              onClick={() => navigate("/novo-pedido")}
+              sx={{
+                height: 40,
+                px: 2,
+                borderRadius: "7px",
+                backgroundColor: "#FF7800",
+                boxShadow: "none",
+                textTransform: "none",
+                fontSize: 13,
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+
+                "&:hover": {
+                  backgroundColor: "#E96800",
+                  boxShadow: "none",
+                },
+              }}
+            >
+              Novo pedido
+            </Button>
           </Stack>
-        </Box>
+        </Stack>
+
+        {/* =====================================================
+            RESUMO
+        ====================================================== */}
+
+        <Stack
+          direction={{
+            xs: "column",
+            sm: "row",
+          }}
+          spacing={2}
+          mb={3}
+        >
+          <Paper
+            elevation={0}
+            sx={{
+              px: 2,
+              py: 1.5,
+              minWidth: 150,
+              border: "1px solid #E5E5E5",
+              borderRadius: "7px",
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: 11,
+                color: "#737373",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
+            >
+              Total de pedidos
+            </Typography>
+
+            <Typography
+              sx={{
+                mt: 0.3,
+                fontSize: 21,
+                fontWeight: 700,
+                color: "#171717",
+              }}
+            >
+              {pedidos.length}
+            </Typography>
+          </Paper>
+
+          <Paper
+            elevation={0}
+            sx={{
+              px: 2,
+              py: 1.5,
+              minWidth: 150,
+              border: "1px solid #E5E5E5",
+              borderRadius: "7px",
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: 11,
+                color: "#737373",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
+            >
+              Em andamento
+            </Typography>
+
+            <Typography
+              sx={{
+                mt: 0.3,
+                fontSize: 21,
+                fontWeight: 700,
+                color: "#FF7800",
+              }}
+            >
+              {
+                pedidos.filter(
+                  (pedido) =>
+                    pedido.status !== "ENTREGUE" &&
+                    pedido.status !== "CANCELADO"
+                ).length
+              }
+            </Typography>
+          </Paper>
+        </Stack>
 
         {/* =====================================================
             ERRO
@@ -416,7 +426,7 @@ function Pedidos() {
           <Alert
             severity="error"
             sx={{
-              mb: 2,
+              mb: 3,
               borderRadius: "7px",
             }}
           >
@@ -425,457 +435,369 @@ function Pedidos() {
         )}
 
         {/* =====================================================
-            ÁREA DA TABELA
+            CARREGANDO
         ====================================================== */}
 
-        <Box
-          sx={{
-            width: "100%",
-            border: "1px solid #E5E5E5",
-            borderRadius: "8px",
-            overflow: "hidden",
-            backgroundColor: "#FFFFFF",
-          }}
-        >
-          {/* Cabeçalho */}
-
+        {carregando && (
           <Box
-            sx={{
-              display: {
-                xs: "none",
-                md: "grid",
-              },
-
-              gridTemplateColumns:
-                "90px minmax(170px, 1fr) 160px minmax(220px, 1.4fr) 160px 80px",
-
-              alignItems: "center",
-
-              px: 2.5,
-              py: 1.6,
-
-              backgroundColor: "#FAFAFA",
-
-              borderBottom:
-                "1px solid #E5E5E5",
-            }}
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            py={10}
           >
-            <CabecalhoTabela>
-              ID
-            </CabecalhoTabela>
-
-            <CabecalhoTabela>
-              Cliente
-            </CabecalhoTabela>
-
-            <CabecalhoTabela>
-              Status
-            </CabecalhoTabela>
-
-            <CabecalhoTabela>
-              Endereço
-            </CabecalhoTabela>
-
-            <CabecalhoTabela>
-              Itens
-            </CabecalhoTabela>
-
-            <CabecalhoTabela>
-              Ações
-            </CabecalhoTabela>
-          </Box>
-
-          {/* Loading */}
-
-          {carregando && (
-            <Box
+            <CircularProgress
+              size={30}
               sx={{
-                minHeight: 260,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                color: "#FF7800",
               }}
-            >
-              <CircularProgress
-                size={28}
-                sx={{
-                  color: "#FF7800",
-                }}
-              />
-            </Box>
-          )}
-
-          {/* Nenhum resultado */}
-
-          {!carregando &&
-            pedidosFiltrados.length === 0 && (
-              <Box
-                sx={{
-                  minHeight: 260,
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  px: 2,
-                }}
-              >
-                <ShoppingBagOutlinedIcon
-                  sx={{
-                    fontSize: 38,
-                    color: "#D4D4D4",
-                    mb: 1,
-                  }}
-                />
-
-                <Typography
-                  sx={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: "#404040",
-                  }}
-                >
-                  Nenhum pedido encontrado
-                </Typography>
-
-                <Typography
-                  sx={{
-                    mt: 0.5,
-                    fontSize: 12,
-                    color: "#A3A3A3",
-                  }}
-                >
-                  Tente alterar sua busca ou filtro.
-                </Typography>
-              </Box>
-            )}
-
-          {/* Linhas */}
-
-          {!carregando &&
-            pedidosFiltrados.map((pedido, index) => {
-              const status = statusConfig(
-                pedido.status
-              );
-
-              return (
-                <Box
-                  key={pedido.id}
-                  sx={{
-                    display: {
-                      xs: "block",
-                      md: "grid",
-                    },
-
-                    gridTemplateColumns:
-                      "90px minmax(170px, 1fr) 160px minmax(220px, 1.4fr) 160px 80px",
-
-                    alignItems: "center",
-
-                    px: 2.5,
-                    py: 1.8,
-
-                    borderBottom:
-                      index !==
-                      pedidosFiltrados.length - 1
-                        ? "1px solid #EEEEEE"
-                        : "none",
-
-                    transition:
-                      "background-color 0.15s ease",
-
-                    "&:hover": {
-                      backgroundColor: "#FAFAFA",
-                    },
-                  }}
-                >
-                  {/* ID */}
-
-                  <Box
-                    sx={{
-                      mb: {
-                        xs: 1.5,
-                        md: 0,
-                      },
-                    }}
-                  >
-                    <Typography
-                      sx={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: "#262626",
-                      }}
-                    >
-                      #{pedido.id}
-                    </Typography>
-                  </Box>
-
-                  {/* Cliente */}
-
-                  <Box
-                    sx={{
-                      mb: {
-                        xs: 1.5,
-                        md: 0,
-                      },
-                    }}
-                  >
-                    <Typography
-                      sx={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: "#262626",
-                      }}
-                    >
-                      {pedido.cliente}
-                    </Typography>
-                  </Box>
-
-                  {/* Status */}
-
-                  <Box
-                    sx={{
-                      mb: {
-                        xs: 1.5,
-                        md: 0,
-                      },
-                    }}
-                  >
-                    <Chip
-                      label={status.label}
-                      size="small"
-                      sx={{
-                        height: 25,
-                        borderRadius: "5px",
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: status.color,
-                        backgroundColor:
-                          status.background,
-
-                        "& .MuiChip-label": {
-                          px: 1,
-                        },
-                      }}
-                    />
-                  </Box>
-
-                  {/* Endereço */}
-
-                  <Box
-                    sx={{
-                      mb: {
-                        xs: 1.5,
-                        md: 0,
-                      },
-                    }}
-                  >
-                    <Typography
-                      sx={{
-                        fontSize: 12.5,
-                        color: "#737373",
-                        whiteSpace: {
-                          md: "nowrap",
-                        },
-                        overflow: {
-                          md: "hidden",
-                        },
-                        textOverflow: {
-                          md: "ellipsis",
-                        },
-                      }}
-                    >
-                      {pedido.enderecoEntrega}
-                    </Typography>
-                  </Box>
-
-                  {/* Itens */}
-
-                  <Box
-                    sx={{
-                      mb: {
-                        xs: 1.5,
-                        md: 0,
-                      },
-                    }}
-                  >
-                    <Stack spacing={0.4}>
-                      {pedido.itens
-                        ?.slice(0, 2)
-                        .map((item) => (
-                          <Typography
-                            key={item.id}
-                            sx={{
-                              fontSize: 12,
-                              color: "#525252",
-                            }}
-                          >
-                            {item.quantidade}x{" "}
-                            {item.nome}
-                          </Typography>
-                        ))}
-
-                      {pedido.itens?.length > 2 && (
-                        <Typography
-                          sx={{
-                            fontSize: 11,
-                            color: "#A3A3A3",
-                          }}
-                        >
-                          +{" "}
-                          {pedido.itens.length - 2}{" "}
-                          outros
-                        </Typography>
-                      )}
-                    </Stack>
-                  </Box>
-
-                  {/* Ação */}
-
-                  <Box>
-                    <Button
-                      variant="text"
-                      size="small"
-                      sx={{
-                        minWidth: 34,
-                        width: 34,
-                        height: 34,
-                        borderRadius: "6px",
-                        color: "#737373",
-
-                        "&:hover": {
-                          backgroundColor: "#FFF7ED",
-                          color: "#FF7800",
-                        },
-                      }}
-                    >
-                      <VisibilityOutlinedIcon
-                        sx={{
-                          fontSize: 19,
-                        }}
-                      />
-                    </Button>
-                  </Box>
-                </Box>
-              );
-            })}
-        </Box>
+            />
+          </Box>
+        )}
 
         {/* =====================================================
-            RODAPÉ DA LISTAGEM
+            NENHUM PEDIDO
         ====================================================== */}
 
         {!carregando &&
-          pedidosFiltrados.length > 0 && (
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              mt={2}
+          !erro &&
+          pedidosFiltrados.length === 0 && (
+            <Paper
+              elevation={0}
+              sx={{
+                border: "1px solid #E5E5E5",
+                borderRadius: "8px",
+                p: 6,
+                textAlign: "center",
+              }}
             >
               <Typography
                 sx={{
-                  fontSize: 12,
-                  color: "#737373",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#404040",
                 }}
               >
-                Exibindo{" "}
-                <strong>
-                  {pedidosFiltrados.length}
-                </strong>{" "}
-                de{" "}
-                <strong>
-                  {pedidos.length}
-                </strong>{" "}
-                pedidos
+                Nenhum pedido encontrado.
               </Typography>
 
               <Typography
                 sx={{
-                  fontSize: 12,
-                  color: "#A3A3A3",
+                  mt: 0.5,
+                  fontSize: 13,
+                  color: "#737373",
                 }}
               >
-                Página 1
+                Tente alterar os termos da busca ou crie um
+                novo pedido.
               </Typography>
+            </Paper>
+          )}
+
+        {/* =====================================================
+            LISTA DE PEDIDOS
+        ====================================================== */}
+
+        {!carregando &&
+          !erro &&
+          pedidosFiltrados.length > 0 && (
+            <Stack spacing={2}>
+              {pedidosFiltrados.map((pedido) => (
+                <Paper
+                  key={pedido.id}
+                  elevation={0}
+                  sx={{
+                    border: "1px solid #E5E5E5",
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                    transition: "border-color 0.2s ease",
+
+                    "&:hover": {
+                      borderColor: "#D4D4D4",
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      p: {
+                        xs: 2,
+                        md: 2.5,
+                      },
+                    }}
+                  >
+                    {/* CABEÇALHO DO PEDIDO */}
+
+                    <Stack
+                      direction={{
+                        xs: "column",
+                        md: "row",
+                      }}
+                      justifyContent="space-between"
+                      alignItems={{
+                        xs: "flex-start",
+                        md: "center",
+                      }}
+                      spacing={2}
+                    >
+                      <Box>
+                        <Typography
+                          sx={{
+                            fontSize: 16,
+                            fontWeight: 700,
+                            color: "#171717",
+                          }}
+                        >
+                          Pedido #{pedido.id}
+                        </Typography>
+
+                        <Typography
+                          sx={{
+                            mt: 0.3,
+                            fontSize: 12,
+                            color: "#737373",
+                          }}
+                        >
+                          {pedido.cliente}
+                        </Typography>
+                      </Box>
+
+                      {/* STATUS */}
+
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                      >
+                        <Box
+                          sx={{
+                            width: 7,
+                            height: 7,
+                            borderRadius: "50%",
+                            backgroundColor: corStatus(
+                              pedido.status
+                            ),
+                          }}
+                        />
+
+                        <Typography
+                          sx={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: corStatus(
+                              pedido.status
+                            ),
+                          }}
+                        >
+                          {formatarStatus(pedido.status)}
+                        </Typography>
+                      </Stack>
+                    </Stack>
+
+                    <Divider
+                      sx={{
+                        my: 2,
+                      }}
+                    />
+
+                    {/* INFORMAÇÕES */}
+
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: {
+                          xs: "1fr",
+                          md: "1.2fr 1fr 1fr",
+                        },
+                        gap: {
+                          xs: 2,
+                          md: 3,
+                        },
+                      }}
+                    >
+                      {/* ENDEREÇO */}
+
+                      <Box>
+                        <Typography
+                          sx={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: "#A3A3A3",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.6px",
+                          }}
+                        >
+                          Endereço de entrega
+                        </Typography>
+
+                        <Typography
+                          sx={{
+                            mt: 0.7,
+                            fontSize: 13,
+                            color: "#404040",
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          {pedido.enderecoEntrega}
+                        </Typography>
+                      </Box>
+
+                      {/* ITENS */}
+
+                      <Box>
+                        <Typography
+                          sx={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: "#A3A3A3",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.6px",
+                          }}
+                        >
+                          Itens
+                        </Typography>
+
+                        <Stack
+                          spacing={0.5}
+                          mt={0.7}
+                        >
+                          {pedido.itens?.map((item) => (
+                            <Stack
+                              key={item.id}
+                              direction="row"
+                              justifyContent="space-between"
+                              spacing={2}
+                            >
+                              <Typography
+                                sx={{
+                                  fontSize: 13,
+                                  color: "#404040",
+                                }}
+                              >
+                                {item.nome}
+                              </Typography>
+
+                              <Typography
+                                sx={{
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  color: "#525252",
+                                }}
+                              >
+                                {item.quantidade}x
+                              </Typography>
+                            </Stack>
+                          ))}
+                        </Stack>
+                      </Box>
+
+                      {/* ALTERAÇÃO DE STATUS */}
+
+                      <Box>
+                        <Typography
+                          sx={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: "#A3A3A3",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.6px",
+                          }}
+                        >
+                          Alterar status
+                        </Typography>
+
+                        <FormControl
+                          size="small"
+                          fullWidth
+                          sx={{
+                            mt: 0.7,
+                          }}
+                        >
+                          <Select
+                            value={pedido.status}
+                            disabled={
+                              alterandoStatus === pedido.id
+                            }
+                            onChange={(event) =>
+                              alterarStatus(
+                                pedido.id,
+                                event.target.value
+                              )
+                            }
+                            sx={{
+                              height: 38,
+                              fontSize: 13,
+                              borderRadius: "7px",
+
+                              "& .MuiOutlinedInput-notchedOutline":
+                                {
+                                  borderColor: "#E5E5E5",
+                                },
+
+                              "&:hover .MuiOutlinedInput-notchedOutline":
+                                {
+                                  borderColor: "#FF7800",
+                                },
+
+                              "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                {
+                                  borderColor: "#FF7800",
+                                },
+                            }}
+                          >
+                            <MenuItem value="RECEBIDO">
+                              Recebido
+                            </MenuItem>
+
+                            <MenuItem value="EM_PREPARO">
+                              Em preparo
+                            </MenuItem>
+
+                            <MenuItem value="SAIU_PARA_ENTREGA">
+                              Saiu para entrega
+                            </MenuItem>
+
+                            <MenuItem value="ENTREGUE">
+                              Entregue
+                            </MenuItem>
+
+                            <MenuItem value="CANCELADO">
+                              Cancelado
+                            </MenuItem>
+                          </Select>
+                        </FormControl>
+
+                        {alterandoStatus === pedido.id && (
+                          <Stack
+                            direction="row"
+                            spacing={0.7}
+                            alignItems="center"
+                            mt={0.7}
+                          >
+                            <CircularProgress
+                              size={12}
+                              sx={{
+                                color: "#FF7800",
+                              }}
+                            />
+
+                            <Typography
+                              sx={{
+                                fontSize: 11,
+                                color: "#737373",
+                              }}
+                            >
+                              Salvando...
+                            </Typography>
+                          </Stack>
+                        )}
+                      </Box>
+                    </Box>
+                  </Box>
+                </Paper>
+              ))}
             </Stack>
           )}
       </Container>
     </Box>
-  );
-}
-
-/* =========================================================
-   COMPONENTES AUXILIARES
-========================================================= */
-
-function Indicador({
-  titulo,
-  valor,
-  cor = "#171717",
-  destaque = false,
-}) {
-  return (
-    <Box
-      sx={{
-        px: 2.5,
-        py: 2,
-
-        borderRight: {
-          xs: "none",
-          sm: "1px solid #E5E5E5",
-        },
-
-        borderBottom: {
-          xs: "1px solid #E5E5E5",
-          sm: "none",
-        },
-
-        "&:last-child": {
-          borderRight: "none",
-          borderBottom: "none",
-        },
-      }}
-    >
-      <Typography
-        sx={{
-          fontSize: 10,
-          textTransform: "uppercase",
-          letterSpacing: "0.5px",
-          fontWeight: 700,
-          color: destaque ? "#171717" : "#737373",
-        }}
-      >
-        {titulo}
-      </Typography>
-
-      <Typography
-        sx={{
-          mt: 0.4,
-          fontSize: 23,
-          lineHeight: 1,
-          fontWeight: 700,
-          color: cor,
-        }}
-      >
-        {valor}
-      </Typography>
-    </Box>
-  );
-}
-
-function CabecalhoTabela({ children }) {
-  return (
-    <Typography
-      sx={{
-        fontSize: 10,
-        fontWeight: 700,
-        color: "#737373",
-        textTransform: "uppercase",
-        letterSpacing: "0.5px",
-      }}
-    >
-      {children}
-    </Typography>
   );
 }
 
