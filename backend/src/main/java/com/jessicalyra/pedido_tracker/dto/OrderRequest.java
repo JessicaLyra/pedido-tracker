@@ -1,11 +1,21 @@
 package com.jessicalyra.pedido_tracker.dto;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+
 import java.util.List;
 
 public class OrderRequest {
 
+    @NotBlank(message = "O cliente é obrigatório")
     private String cliente;
+
+    @NotBlank(message = "O endereço de entrega é obrigatório")
     private String enderecoEntrega;
+
+    @NotEmpty(message = "O pedido deve possuir pelo menos um item")
+    @Valid
     private List<OrderItemRequest> itens;
 
     public OrderRequest() {
