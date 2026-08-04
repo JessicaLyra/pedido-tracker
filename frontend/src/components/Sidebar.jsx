@@ -133,7 +133,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
         >
           <Box
             component="img"
-            src="/logo delivery tracker.png"
+            src="/logo pedido tracker.png"
             alt="Delivery Tracker"
             sx={{
               width: 155,

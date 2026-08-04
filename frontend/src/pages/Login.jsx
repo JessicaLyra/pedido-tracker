@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -36,7 +37,6 @@ function Login() {
         senha,
       });
 
-      
       login(response.data);
 
       navigate("/dashboard");
@@ -102,7 +102,7 @@ function Login() {
         >
           <Box
             component="img"
-            src="/logo delivery tracker.png"
+            src="/logo pedido tracker.png"
             alt="Delivery Tracker"
             sx={{
               width: {
@@ -166,13 +166,21 @@ function Login() {
               component="label"
               htmlFor="email"
               sx={{
-                display: "block",
+                display: "flex",
+                alignItems: "center",
+                gap: 0.7,
                 mb: 0.8,
                 fontSize: 12,
                 fontWeight: 600,
                 color: "#D4D4D4",
               }}
             >
+              <EmailOutlinedIcon
+                sx={{
+                  fontSize: 16,
+                  color: "#FF7800",
+                }}
+              />
               E-mail
             </Typography>
 
@@ -182,7 +190,6 @@ function Login() {
               fullWidth
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="Digite seu e-mail"
               required
               autoComplete="email"
               sx={{
@@ -205,11 +212,6 @@ function Login() {
                     borderColor: "#FF7800",
                   },
                 },
-
-                "& .MuiInputBase-input::placeholder": {
-                  color: "#737373",
-                  opacity: 1,
-                },
               }}
             />
           </Box>
@@ -221,13 +223,21 @@ function Login() {
               component="label"
               htmlFor="senha"
               sx={{
-                display: "block",
+                display: "flex",
+                alignItems: "center",
+                gap: 0.7,
                 mb: 0.8,
                 fontSize: 12,
                 fontWeight: 600,
                 color: "#D4D4D4",
               }}
             >
+              <LockOutlinedIcon
+                sx={{
+                  fontSize: 16,
+                  color: "#FF7800",
+                }}
+              />
               Senha
             </Typography>
 
@@ -237,7 +247,6 @@ function Login() {
               fullWidth
               value={senha}
               onChange={(event) => setSenha(event.target.value)}
-              placeholder="Digite sua senha"
               required
               autoComplete="current-password"
               sx={{
@@ -259,11 +268,6 @@ function Login() {
                   "&.Mui-focused fieldset": {
                     borderColor: "#FF7800",
                   },
-                },
-
-                "& .MuiInputBase-input::placeholder": {
-                  color: "#737373",
-                  opacity: 1,
                 },
               }}
             />

@@ -147,7 +147,7 @@ function Cadastro() {
           >
             <Box
               component="img"
-              src="/logo delivery tracker.png"
+              src="/logo pedido tracker.png"
               alt="Delivery Tracker"
               sx={{
                 width: {
@@ -241,7 +241,7 @@ function Cadastro() {
                   onChange={(event) =>
                     setNome(event.target.value)
                   }
-                  placeholder="Digite seu nome"
+                 
                   autoComplete="name"
                   required
                   size="small"
@@ -288,7 +288,7 @@ function Cadastro() {
                   onChange={(event) =>
                     setEmail(event.target.value)
                   }
-                  placeholder="Digite seu e-mail"
+                 
                   autoComplete="email"
                   required
                   size="small"
@@ -335,7 +335,7 @@ function Cadastro() {
                   onChange={(event) =>
                     setSenha(event.target.value)
                   }
-                  placeholder="Digite sua senha"
+                 
                   autoComplete="new-password"
                   required
                   size="small"
@@ -382,7 +382,7 @@ function Cadastro() {
                   onChange={(event) =>
                     setConfirmarSenha(event.target.value)
                   }
-                  placeholder="Digite a senha novamente"
+                
                   autoComplete="new-password"
                   required
                   size="small"

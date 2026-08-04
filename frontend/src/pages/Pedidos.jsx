@@ -27,7 +27,6 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 
 function Pedidos() {
   const navigate = useNavigate();
@@ -42,6 +41,7 @@ function Pedidos() {
 
   const [pedidoSelecionado, setPedidoSelecionado] = useState(null);
   const [modalAberto, setModalAberto] = useState(false);
+  const [carregandoDetalhes, setCarregandoDetalhes] = useState(false);
 
   useEffect(() => {
     carregarPedidos();
@@ -81,6 +81,53 @@ function Pedidos() {
     } finally {
       setCarregando(false);
     }
+  }
+
+  async function abrirDetalhes(pedido) {
+    try {
+      setErro("");
+      setCarregandoDetalhes(true);
+
+      setPedidoSelecionado(null);
+      setModalAberto(true);
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        setModalAberto(false);
+        navigate("/login");
+        return;
+      }
+
+      const response = await api.get(`/orders/${pedido.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setPedidoSelecionado(response.data);
+    } catch (error) {
+      console.error("Erro ao carregar detalhes do pedido:", error);
+
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("usuario");
+
+        setModalAberto(false);
+        navigate("/login");
+        return;
+      }
+
+      setErro("Não foi possível carregar os detalhes do pedido.");
+    } finally {
+      setCarregandoDetalhes(false);
+    }
+  }
+
+  function fecharDetalhes() {
+    setModalAberto(false);
+    setPedidoSelecionado(null);
+    setCarregandoDetalhes(false);
   }
 
   async function alterarStatus(id, novoStatus) {
@@ -141,16 +188,6 @@ function Pedidos() {
     } finally {
       setAlterandoStatus(null);
     }
-  }
-
-  function abrirDetalhes(pedido) {
-    setPedidoSelecionado(pedido);
-    setModalAberto(true);
-  }
-
-  function fecharDetalhes() {
-    setModalAberto(false);
-    setPedidoSelecionado(null);
   }
 
   function formatarStatus(status) {
@@ -241,11 +278,6 @@ function Pedidos() {
         backgroundColor: "#FFFFFF",
       }}
     >
-      {/* =====================================================
-          CONTEÚDO PRINCIPAL
-          O SIDEBAR JÁ ESTÁ NO APP
-      ====================================================== */}
-
       <Box
         component="main"
         sx={{
@@ -267,9 +299,7 @@ function Pedidos() {
           boxSizing: "border-box",
         }}
       >
-        {/* =====================================================
-            CABEÇALHO
-        ====================================================== */}
+        {/* CABEÇALHO */}
 
         <Box
           sx={{
@@ -288,8 +318,6 @@ function Pedidos() {
             }}
             spacing={2}
           >
-            {/* TÍTULO */}
-
             <Box>
               <Typography
                 sx={{
@@ -319,8 +347,6 @@ function Pedidos() {
               </Typography>
             </Box>
 
-            {/* AÇÕES */}
-
             <Stack
               direction="row"
               spacing={1}
@@ -331,8 +357,6 @@ function Pedidos() {
                 },
               }}
             >
-              {/* ATUALIZAR */}
-
               <Button
                 variant="outlined"
                 startIcon={<RefreshOutlinedIcon />}
@@ -365,8 +389,6 @@ function Pedidos() {
               >
                 Atualizar
               </Button>
-
-              {/* NOVO PEDIDO */}
 
               <Button
                 variant="contained"
@@ -404,9 +426,7 @@ function Pedidos() {
           </Stack>
         </Box>
 
-        {/* =====================================================
-            RESUMO
-        ====================================================== */}
+        {/* RESUMO */}
 
         <Box
           sx={{
@@ -419,8 +439,6 @@ function Pedidos() {
             mb: 3,
           }}
         >
-          {/* TOTAL */}
-
           <Box
             sx={{
               py: 2,
@@ -446,8 +464,6 @@ function Pedidos() {
               {pedidos.length}
             </Typography>
           </Box>
-
-          {/* EM ANDAMENTO */}
 
           <Box
             sx={{
@@ -480,8 +496,6 @@ function Pedidos() {
             </Typography>
           </Box>
 
-          {/* ENTREGUES */}
-
           <Box
             sx={{
               py: 2,
@@ -502,9 +516,7 @@ function Pedidos() {
           </Box>
         </Box>
 
-        {/* =====================================================
-            FILTROS
-        ====================================================== */}
+        {/* FILTROS */}
 
         <Stack
           direction={{
@@ -517,8 +529,6 @@ function Pedidos() {
             width: "100%",
           }}
         >
-          {/* BUSCA */}
-
           <TextField
             value={busca}
             onChange={(event) =>
@@ -568,8 +578,6 @@ function Pedidos() {
               ),
             }}
           />
-
-          {/* FILTRO STATUS */}
 
           <FormControl
             size="small"
@@ -635,9 +643,7 @@ function Pedidos() {
           </FormControl>
         </Stack>
 
-        {/* =====================================================
-            ERRO
-        ====================================================== */}
+        {/* ERRO */}
 
         {!carregando && erro && (
           <Alert
@@ -651,9 +657,7 @@ function Pedidos() {
           </Alert>
         )}
 
-        {/* =====================================================
-            CARREGANDO
-        ====================================================== */}
+        {/* CARREGANDO */}
 
         {carregando && (
           <Box
@@ -673,9 +677,7 @@ function Pedidos() {
           </Box>
         )}
 
-        {/* =====================================================
-            NENHUM PEDIDO
-        ====================================================== */}
+        {/* NENHUM PEDIDO */}
 
         {!carregando &&
           !erro &&
@@ -712,9 +714,7 @@ function Pedidos() {
             </Box>
           )}
 
-        {/* =====================================================
-            TABELA
-        ====================================================== */}
+        {/* TABELA */}
 
         {!carregando &&
           !erro &&
@@ -743,8 +743,6 @@ function Pedidos() {
                   },
                 }}
               >
-                {/* CABEÇALHO DA TABELA */}
-
                 <Box
                   sx={{
                     display: "grid",
@@ -792,8 +790,6 @@ function Pedidos() {
                   </Typography>
                 </Box>
 
-                {/* LINHAS */}
-
                 {pedidosFiltrados.map((pedido) => {
                   const status = estiloStatus(
                     pedido.status
@@ -831,8 +827,6 @@ function Pedidos() {
                         },
                       }}
                     >
-                      {/* ID */}
-
                       <Typography
                         sx={{
                           fontSize: 14,
@@ -842,8 +836,6 @@ function Pedidos() {
                       >
                         #{pedido.id}
                       </Typography>
-
-                      {/* NOME */}
 
                       <Typography
                         sx={{
@@ -858,8 +850,6 @@ function Pedidos() {
                       >
                         {pedido.cliente}
                       </Typography>
-
-                      {/* STATUS */}
 
                       <Box
                         sx={{
@@ -912,8 +902,6 @@ function Pedidos() {
                         </Typography>
                       </Box>
 
-                      {/* ENDEREÇO */}
-
                       <Typography
                         sx={{
                           fontSize: 12,
@@ -930,8 +918,6 @@ function Pedidos() {
                       >
                         {pedido.enderecoEntrega}
                       </Typography>
-
-                      {/* ITENS */}
 
                       <Stack spacing={0.4}>
                         {pedido.itens?.map((item) => (
@@ -973,8 +959,6 @@ function Pedidos() {
                           </Stack>
                         ))}
                       </Stack>
-
-                      {/* AÇÕES */}
 
                       <Box
                         sx={{
@@ -1024,9 +1008,7 @@ function Pedidos() {
           )}
       </Box>
 
-      {/* =====================================================
-          MODAL DE DETALHES
-      ====================================================== */}
+      {/* MODAL DE DETALHES */}
 
       <Dialog
         open={modalAberto}
@@ -1049,372 +1031,581 @@ function Pedidos() {
           },
         }}
       >
-        {pedidoSelecionado && (
-          <>
-            {/* =================================================
-                CABEÇALHO
-            ================================================== */}
+        {/* LOADING DOS DETALHES */}
 
-            <DialogTitle
+        {carregandoDetalhes && (
+          <Box
+            sx={{
+              minHeight: 320,
+
+              display: "flex",
+
+              flexDirection: "column",
+
+              justifyContent: "center",
+
+              alignItems: "center",
+
+              gap: 1.5,
+            }}
+          >
+            <CircularProgress
+              size={30}
               sx={{
-                px: {
-                  xs: 2.5,
-                  sm: 3.5,
-                },
+                color: "#FF7800",
+              }}
+            />
 
-                py: 2.5,
-
-                borderBottom:
-                  "1px solid #E5E5E5",
-
-                backgroundColor: "#FFFFFF",
+            <Typography
+              sx={{
+                fontSize: 13,
+                color: "#737373",
               }}
             >
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                spacing={2}
-              >
-                <Box>
-                  <Typography
-                    sx={{
-                      fontSize: {
-                        xs: 20,
-                        sm: 22,
-                      },
+              Carregando pedido...
+            </Typography>
+          </Box>
+        )}
 
-                      fontWeight: 700,
+        {/* CONTEÚDO DO PEDIDO */}
 
-                      color: "#171717",
+        {!carregandoDetalhes &&
+          pedidoSelecionado && (
+            <>
+              {/* CABEÇALHO */}
 
-                      letterSpacing: "-0.5px",
-
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    Pedido #{pedidoSelecionado.id}
-                  </Typography>
-
-                  <Typography
-                    sx={{
-                      mt: 0.6,
-
-                      fontSize: 12,
-
-                      color: "#737373",
-                    }}
-                  >
-                    Informações e gerenciamento do pedido
-                  </Typography>
-                </Box>
-
-               
-              </Stack>
-            </DialogTitle>
-
-            {/* =================================================
-                CONTEÚDO
-            ================================================== */}
-
-            <DialogContent
-              sx={{
-                px: {
-                  xs: 2.5,
-                  sm: 3.5,
-                },
-
-                py: 3,
-              }}
-            >
-              {/* =================================================
-                  STATUS ATUAL
-              ================================================== */}
-
-              <Box
+              <DialogTitle
                 sx={{
-                  mb: 3,
+                  px: {
+                    xs: 2.5,
+                    sm: 3.5,
+                  },
 
-                  p: 2.2,
+                  py: 2.5,
 
-                  borderRadius: "11px",
-
-                  backgroundColor: "#FAFAFA",
-
-                  border:
+                  borderBottom:
                     "1px solid #E5E5E5",
+
+                  backgroundColor: "#FFFFFF",
                 }}
               >
                 <Stack
-                  direction={{
-                    xs: "column",
-                    sm: "row",
-                  }}
+                  direction="row"
                   justifyContent="space-between"
-                  alignItems={{
-                    xs: "flex-start",
-                    sm: "center",
-                  }}
-                  spacing={1.5}
+                  alignItems="center"
+                  spacing={2}
                 >
                   <Box>
                     <Typography
                       sx={{
-                        fontSize: 10,
+                        fontSize: {
+                          xs: 20,
+                          sm: 22,
+                        },
+
                         fontWeight: 700,
-                        color: "#737373",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.6px",
+
+                        color: "#171717",
+
+                        letterSpacing: "-0.5px",
+
+                        lineHeight: 1.2,
                       }}
                     >
-                      Status atual
+                      Pedido #{pedidoSelecionado.id}
                     </Typography>
 
                     <Typography
                       sx={{
-                        mt: 0.5,
+                        mt: 0.6,
 
                         fontSize: 12,
 
                         color: "#737373",
                       }}
                     >
-                      Situação atual deste pedido
+                      Informações e gerenciamento do pedido
                     </Typography>
                   </Box>
-
-                  {(() => {
-                    const status = estiloStatus(
-                      pedidoSelecionado.status
-                    );
-
-                    return (
-                      <Box
-                        sx={{
-                          display: "inline-flex",
-
-                          alignItems: "center",
-
-                          gap: 1,
-
-                          px: 1.5,
-
-                          height: 36,
-
-                          borderRadius: "8px",
-
-                          backgroundColor:
-                            status.fundo,
-
-                          border: `1px solid ${status.borda}`,
-
-                          boxShadow:
-                            "0 1px 2px rgba(0,0,0,0.03)",
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-
-                            borderRadius: "50%",
-
-                            backgroundColor:
-                              status.cor,
-                          }}
-                        />
-
-                        <Typography
-                          sx={{
-                            fontSize: 12,
-
-                            fontWeight: 700,
-
-                            color:
-                              status.cor,
-
-                            whiteSpace:
-                              "nowrap",
-                          }}
-                        >
-                          {formatarStatus(
-                            pedidoSelecionado.status
-                          )}
-                        </Typography>
-                      </Box>
-                    );
-                  })()}
                 </Stack>
-              </Box>
+              </DialogTitle>
 
-              {/* =================================================
-                  DADOS DO CLIENTE
-              ================================================== */}
+              {/* CONTEÚDO */}
 
-              <Box
+              <DialogContent
                 sx={{
-                  mb: 3,
+                  px: {
+                    xs: 2.5,
+                    sm: 3.5,
+                  },
+
+                  py: 3,
                 }}
               >
-                <Typography
-                  sx={{
-                    mb: 1.5,
-
-                    fontSize: 10,
-                    fontWeight: 700,
-
-                    color: "#737373",
-
-                    textTransform:
-                      "uppercase",
-
-                    letterSpacing:
-                      "0.6px",
-                  }}
-                >
-                  Dados da entrega
-                </Typography>
+                {/* STATUS ATUAL */}
 
                 <Box
                   sx={{
-                    display: "grid",
+                    mb: 3,
 
-                    gridTemplateColumns: {
-                      xs: "1fr",
-                      sm: "1fr 1.3fr",
-                    },
+                    p: 2.2,
 
-                    gap: 1.5,
+                    borderRadius: "11px",
+
+                    backgroundColor: "#FAFAFA",
+
+                    border:
+                      "1px solid #E5E5E5",
                   }}
                 >
-                  {/* CLIENTE */}
+                  <Stack
+                    direction={{
+                      xs: "column",
+                      sm: "row",
+                    }}
+                    justifyContent="space-between"
+                    alignItems={{
+                      xs: "flex-start",
+                      sm: "center",
+                    }}
+                    spacing={1.5}
+                  >
+                    <Box>
+                      <Typography
+                        sx={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: "#737373",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.6px",
+                        }}
+                      >
+                        Status atual
+                      </Typography>
+
+                      <Typography
+                        sx={{
+                          mt: 0.5,
+
+                          fontSize: 12,
+
+                          color: "#737373",
+                        }}
+                      >
+                        Situação atual deste pedido
+                      </Typography>
+                    </Box>
+
+                    {(() => {
+                      const status = estiloStatus(
+                        pedidoSelecionado.status
+                      );
+
+                      return (
+                        <Box
+                          sx={{
+                            display: "inline-flex",
+
+                            alignItems: "center",
+
+                            gap: 1,
+
+                            px: 1.5,
+
+                            height: 36,
+
+                            borderRadius: "8px",
+
+                            backgroundColor:
+                              status.fundo,
+
+                            border: `1px solid ${status.borda}`,
+
+                            boxShadow:
+                              "0 1px 2px rgba(0,0,0,0.03)",
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+
+                              borderRadius: "50%",
+
+                              backgroundColor:
+                                status.cor,
+                            }}
+                          />
+
+                          <Typography
+                            sx={{
+                              fontSize: 12,
+
+                              fontWeight: 700,
+
+                              color:
+                                status.cor,
+
+                              whiteSpace:
+                                "nowrap",
+                            }}
+                          >
+                            {formatarStatus(
+                              pedidoSelecionado.status
+                            )}
+                          </Typography>
+                        </Box>
+                      );
+                    })()}
+                  </Stack>
+                </Box>
+
+                {/* DADOS DO CLIENTE */}
+
+                <Box
+                  sx={{
+                    mb: 3,
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      mb: 1.5,
+
+                      fontSize: 10,
+                      fontWeight: 700,
+
+                      color: "#737373",
+
+                      textTransform:
+                        "uppercase",
+
+                      letterSpacing:
+                        "0.6px",
+                    }}
+                  >
+                    Dados da entrega
+                  </Typography>
 
                   <Box
                     sx={{
-                      p: 2,
+                      display: "grid",
 
-                      border:
-                        "1px solid #E5E5E5",
+                      gridTemplateColumns: {
+                        xs: "1fr",
+                        sm: "1fr 1.3fr",
+                      },
 
-                      borderRadius: "10px",
-
-                      backgroundColor:
-                        "#FFFFFF",
+                      gap: 1.5,
                     }}
                   >
-                    <Typography
+                    {/* CLIENTE */}
+
+                    <Box
                       sx={{
-                        fontSize: 10,
+                        p: 2,
 
-                        fontWeight: 700,
+                        border:
+                          "1px solid #E5E5E5",
 
-                        color: "#A3A3A3",
+                        borderRadius: "10px",
 
-                        textTransform:
-                          "uppercase",
-
-                        letterSpacing:
-                          "0.5px",
+                        backgroundColor:
+                          "#FFFFFF",
                       }}
                     >
-                      Cliente
-                    </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: 10,
 
-                    <Typography
+                          fontWeight: 700,
+
+                          color: "#A3A3A3",
+
+                          textTransform:
+                            "uppercase",
+
+                          letterSpacing:
+                            "0.5px",
+                        }}
+                      >
+                        Cliente
+                      </Typography>
+
+                      <Typography
+                        sx={{
+                          mt: 0.7,
+
+                          fontSize: 15,
+
+                          fontWeight: 700,
+
+                          color: "#171717",
+
+                          lineHeight: 1.4,
+
+                          wordBreak:
+                            "break-word",
+                        }}
+                      >
+                        {pedidoSelecionado.cliente}
+                      </Typography>
+                    </Box>
+
+                    {/* ENDEREÇO */}
+
+                    <Box
                       sx={{
-                        mt: 0.7,
+                        p: 2,
 
-                        fontSize: 15,
+                        border:
+                          "1px solid #E5E5E5",
 
-                        fontWeight: 700,
+                        borderRadius: "10px",
 
-                        color: "#171717",
-
-                        lineHeight: 1.4,
-
-                        wordBreak:
-                          "break-word",
+                        backgroundColor:
+                          "#FFFFFF",
                       }}
                     >
-                      {pedidoSelecionado.cliente}
-                    </Typography>
-                  </Box>
+                      <Typography
+                        sx={{
+                          fontSize: 10,
 
-                  {/* ENDEREÇO */}
+                          fontWeight: 700,
 
-                  <Box
-                    sx={{
-                      p: 2,
+                          color: "#A3A3A3",
 
-                      border:
-                        "1px solid #E5E5E5",
+                          textTransform:
+                            "uppercase",
 
-                      borderRadius: "10px",
+                          letterSpacing:
+                            "0.5px",
+                        }}
+                      >
+                        Endereço de entrega
+                      </Typography>
 
-                      backgroundColor:
-                        "#FFFFFF",
-                    }}
-                  >
-                    <Typography
-                      sx={{
-                        fontSize: 10,
+                      <Typography
+                        sx={{
+                          mt: 0.7,
 
-                        fontWeight: 700,
+                          fontSize: 13,
 
-                        color: "#A3A3A3",
+                          fontWeight: 500,
 
-                        textTransform:
-                          "uppercase",
+                          color: "#404040",
 
-                        letterSpacing:
-                          "0.5px",
-                      }}
-                    >
-                      Endereço de entrega
-                    </Typography>
+                          lineHeight: 1.5,
 
-                    <Typography
-                      sx={{
-                        mt: 0.7,
-
-                        fontSize: 13,
-
-                        fontWeight: 500,
-
-                        color: "#404040",
-
-                        lineHeight: 1.5,
-
-                        wordBreak:
-                          "break-word",
-                      }}
-                    >
-                      {
-                        pedidoSelecionado.enderecoEntrega
-                      }
-                    </Typography>
+                          wordBreak:
+                            "break-word",
+                        }}
+                      >
+                        {
+                          pedidoSelecionado.enderecoEntrega
+                        }
+                      </Typography>
+                    </Box>
                   </Box>
                 </Box>
-              </Box>
 
-              <Divider
-                sx={{
-                  mb: 3,
-                }}
-              />
+                <Divider
+                  sx={{
+                    mb: 3,
+                  }}
+                />
 
-              {/* =================================================
-                  ITENS DO PEDIDO
-              ================================================== */}
+                {/* ITENS */}
 
-              <Box mb={3}>
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  mb={1.5}
+                <Box mb={3}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={1.5}
+                  >
+                    <Box>
+                      <Typography
+                        sx={{
+                          fontSize: 10,
+
+                          fontWeight: 700,
+
+                          color: "#737373",
+
+                          textTransform:
+                            "uppercase",
+
+                          letterSpacing:
+                            "0.6px",
+                        }}
+                      >
+                        Itens do pedido
+                      </Typography>
+
+                      <Typography
+                        sx={{
+                          mt: 0.4,
+                          mr: 2,
+
+                          fontSize: 12,
+
+                          color: "#737373",
+                        }}
+                      >
+                        Produtos incluídos neste pedido
+                      </Typography>
+                    </Box>
+
+                    <Box
+                      sx={{
+                        px: 0,
+
+                        py: 2,
+
+                        borderRadius: "6px",
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontSize: 11,
+                          px: 1,
+                          fontWeight: 700,
+                          backgroundColor: "#F5F5F5",
+                          color: "#525252",
+                        }}
+                      >
+                        {
+                          pedidoSelecionado.itens
+                            ?.length || 0
+                        }{" "}
+                        {pedidoSelecionado.itens
+                          ?.length === 1
+                          ? "item"
+                          : "itens"}
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  <Stack spacing={0.8}>
+                    {pedidoSelecionado.itens?.map(
+                      (item) => (
+                        <Box
+                          key={item.id}
+                          sx={{
+                            display: "flex",
+
+                            alignItems: "center",
+
+                            justifyContent:
+                              "space-between",
+
+                            gap: 2,
+
+                            px: 1.7,
+
+                            py: 1.3,
+
+                            border:
+                              "1px solid #E5E5E5",
+
+                            borderRadius: "9px",
+
+                            backgroundColor:
+                              "#FFFFFF",
+
+                            transition:
+                              "background-color 0.15s ease, border-color 0.15s ease",
+
+                            "&:hover": {
+                              backgroundColor:
+                                "#FAFAFA",
+
+                              borderColor:
+                                "#DADADA",
+                            },
+                          }}
+                        >
+                          <Typography
+                            sx={{
+                              fontSize: 13,
+
+                              fontWeight: 600,
+
+                              color: "#404040",
+
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            {item.nome}
+                          </Typography>
+
+                          <Box
+                            sx={{
+                              minWidth: 38,
+
+                              height: 27,
+
+                              px: 1,
+
+                              display: "flex",
+
+                              alignItems:
+                                "center",
+
+                              justifyContent:
+                                "center",
+
+                              borderRadius:
+                                "6px",
+
+                              backgroundColor:
+                                "#F5F5F5",
+                            }}
+                          >
+                            <Typography
+                              sx={{
+                                fontSize: 11,
+
+                                fontWeight: 700,
+
+                                color: "#404040",
+                              }}
+                            >
+                              {item.quantidade}x
+                            </Typography>
+                          </Box>
+                        </Box>
+                      )
+                    )}
+                  </Stack>
+                </Box>
+
+                <Divider
+                  sx={{
+                    mb: 3,
+                  }}
+                />
+
+                {/* ALTERAR STATUS */}
+
+                <Box
+                  sx={{
+                    p: 2.2,
+
+                    borderRadius: "11px",
+
+                    border:
+                      "1px solid #E5E5E5",
+
+                    backgroundColor:
+                      "#FCFCFC",
+                  }}
                 >
-                  <Box>
+                  <Box
+                    sx={{
+                      mb: 1.8,
+                    }}
+                  >
                     <Typography
                       sx={{
                         fontSize: 10,
@@ -1430,609 +1621,417 @@ function Pedidos() {
                           "0.6px",
                       }}
                     >
-                      Itens do pedido
+                      Atualizar status
                     </Typography>
 
                     <Typography
                       sx={{
-                        mt: 0.4,
-                        mr:2,
+                        mt: 0.5,
 
                         fontSize: 12,
 
                         color: "#737373",
+
+                        lineHeight: 1.5,
                       }}
                     >
-                      Produtos incluídos neste pedido
+                      Selecione o novo status para
+                      atualizar o andamento deste pedido.
                     </Typography>
                   </Box>
 
-                  <Box
-                    sx={{
-                      px: 0,
-
-                      py: 2,
-
-                      borderRadius: "6px",
-
-                      
-                    }}
+                  <FormControl
+                    fullWidth
+                    size="small"
                   >
-                    <Typography
-                      sx={{
-                        fontSize: 11,
-                        px: 1,
-                        fontWeight: 700,
-                        backgroundColor: "#F5F5F5",
-                        color: "#525252",
+                    <Select
+                      value={
+                        pedidoSelecionado.status
+                      }
+                      disabled={
+                        alterandoStatus ===
+                        pedidoSelecionado.id
+                      }
+                      onChange={(event) =>
+                        alterarStatus(
+                          pedidoSelecionado.id,
+                          event.target.value
+                        )
+                      }
+                      renderValue={(valor) => {
+                        const status =
+                          estiloStatus(valor);
+
+                        return (
+                          <Box
+                            sx={{
+                              display: "flex",
+
+                              alignItems:
+                                "center",
+
+                              gap: 1,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                width: 8,
+                                height: 8,
+
+                                borderRadius:
+                                  "50%",
+
+                                backgroundColor:
+                                  status.cor,
+                              }}
+                            />
+
+                            <Typography
+                              sx={{
+                                fontSize: 13,
+
+                                fontWeight: 600,
+
+                                color: "#262626",
+                              }}
+                            >
+                              {formatarStatus(
+                                valor
+                              )}
+                            </Typography>
+                          </Box>
+                        );
                       }}
-                    >
-                      {
-                        pedidoSelecionado.itens
-                          ?.length || 0
-                      }{" "}
-                      {pedidoSelecionado.itens
-                        ?.length === 1
-                        ? "item"
-                        : "itens"}
-                    </Typography>
-                  </Box>
-                </Stack>
+                      sx={{
+                        height: 46,
 
-                <Stack spacing={0.8}>
-                  {pedidoSelecionado.itens?.map(
-                    (item) => (
-                      <Box
-                        key={item.id}
-                        sx={{
-                          display: "flex",
+                        borderRadius: "8px",
 
-                          alignItems: "center",
+                        fontSize: 13,
 
-                          justifyContent:
-                            "space-between",
+                        backgroundColor:
+                          "#FFFFFF",
 
-                          gap: 2,
-
-                          px: 1.7,
-
-                          py: 1.3,
-
-                          border:
-                            "1px solid #E5E5E5",
-
-                          borderRadius: "9px",
-
-                          backgroundColor:
-                            "#FFFFFF",
-
-                          transition:
-                            "background-color 0.15s ease, border-color 0.15s ease",
-
-                          "&:hover": {
-                            backgroundColor:
-                              "#FAFAFA",
-
+                        "& .MuiOutlinedInput-notchedOutline":
+                          {
                             borderColor:
                               "#DADADA",
                           },
+
+                        "&:hover .MuiOutlinedInput-notchedOutline":
+                          {
+                            borderColor:
+                              "#C7C7C7",
+                          },
+
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                          {
+                            borderColor:
+                              "#FF7800",
+
+                            borderWidth:
+                              "1px",
+                          },
+
+                        "&.Mui-disabled": {
+                          backgroundColor:
+                            "#F5F5F5",
+                        },
+                      }}
+                    >
+                      <MenuItem
+                        value="RECEBIDO"
+                        sx={{
+                          fontSize: 13,
+                          py: 1.2,
                         }}
                       >
-                        <Typography
-                          sx={{
-                            fontSize: 13,
-
-                            fontWeight: 600,
-
-                            color: "#404040",
-
-                            lineHeight: 1.4,
-                          }}
-                        >
-                          {item.nome}
-                        </Typography>
-
-                        <Box
-                          sx={{
-                            minWidth: 38,
-
-                            height: 27,
-
-                            px: 1,
-
-                            display: "flex",
-
-                            alignItems:
-                              "center",
-
-                            justifyContent:
-                              "center",
-
-                            borderRadius:
-                              "6px",
-
-                            backgroundColor:
-                              "#F5F5F5",
-                          }}
-                        >
-                          <Typography
-                            sx={{
-                              fontSize: 11,
-
-                              fontWeight: 700,
-
-                              color: "#404040",
-                            }}
-                          >
-                            {item.quantidade}x
-                          </Typography>
-                        </Box>
-                      </Box>
-                    )
-                  )}
-                </Stack>
-              </Box>
-
-              <Divider
-                sx={{
-                  mb: 3,
-                }}
-              />
-
-              {/* =================================================
-                  ALTERAR STATUS
-              ================================================== */}
-
-              <Box
-                sx={{
-                  p: 2.2,
-
-                  borderRadius: "11px",
-
-                  border:
-                    "1px solid #E5E5E5",
-
-                  backgroundColor:
-                    "#FCFCFC",
-                }}
-              >
-                <Box
-                  sx={{
-                    mb: 1.8,
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      fontSize: 10,
-
-                      fontWeight: 700,
-
-                      color: "#737373",
-
-                      textTransform:
-                        "uppercase",
-
-                      letterSpacing:
-                        "0.6px",
-                    }}
-                  >
-                    Atualizar status
-                  </Typography>
-
-                  <Typography
-                    sx={{
-                      mt: 0.5,
-
-                      fontSize: 12,
-
-                      color: "#737373",
-
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    Selecione o novo status para
-                    atualizar o andamento deste pedido.
-                  </Typography>
-                </Box>
-
-                {/* SELECT */}
-
-                <FormControl
-                  fullWidth
-                  size="small"
-                >
-                  <Select
-                    value={
-                      pedidoSelecionado.status
-                    }
-                    disabled={
-                      alterandoStatus ===
-                      pedidoSelecionado.id
-                    }
-                    onChange={(event) =>
-                      alterarStatus(
-                        pedidoSelecionado.id,
-                        event.target.value
-                      )
-                    }
-                    renderValue={(valor) => {
-                      const status =
-                        estiloStatus(valor);
-
-                      return (
                         <Box
                           sx={{
                             display: "flex",
-
-                            alignItems:
-                              "center",
-
-                            gap: 1,
+                            alignItems: "center",
+                            gap: 1.2,
                           }}
                         >
                           <Box
                             sx={{
                               width: 8,
                               height: 8,
-
                               borderRadius:
                                 "50%",
-
                               backgroundColor:
-                                status.cor,
+                                "#EA580C",
                             }}
                           />
 
                           <Typography
                             sx={{
                               fontSize: 13,
-
-                              fontWeight: 600,
-
-                              color: "#262626",
+                              fontWeight: 500,
                             }}
                           >
-                            {formatarStatus(
-                              valor
-                            )}
+                            Recebido
                           </Typography>
                         </Box>
-                      );
-                    }}
-                    sx={{
-                      height: 46,
+                      </MenuItem>
 
-                      borderRadius: "8px",
+                      <MenuItem
+                        value="EM_PREPARO"
+                        sx={{
+                          fontSize: 13,
+                          py: 1.2,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.2,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius:
+                                "50%",
+                              backgroundColor:
+                                "#B45309",
+                            }}
+                          />
 
-                      fontSize: 13,
+                          <Typography
+                            sx={{
+                              fontSize: 13,
+                              fontWeight: 500,
+                            }}
+                          >
+                            Em preparo
+                          </Typography>
+                        </Box>
+                      </MenuItem>
 
-                      backgroundColor:
-                        "#FFFFFF",
+                      <MenuItem
+                        value="SAIU_PARA_ENTREGA"
+                        sx={{
+                          fontSize: 13,
+                          py: 1.2,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.2,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius:
+                                "50%",
+                              backgroundColor:
+                                "#2563EB",
+                            }}
+                          />
 
-                      "& .MuiOutlinedInput-notchedOutline":
-                        {
-                          borderColor:
-                            "#DADADA",
-                        },
+                          <Typography
+                            sx={{
+                              fontSize: 13,
+                              fontWeight: 500,
+                            }}
+                          >
+                            Saiu para entrega
+                          </Typography>
+                        </Box>
+                      </MenuItem>
 
-                      "&:hover .MuiOutlinedInput-notchedOutline":
-                        {
-                          borderColor:
-                            "#C7C7C7",
-                        },
+                      <MenuItem
+                        value="ENTREGUE"
+                        sx={{
+                          fontSize: 13,
+                          py: 1.2,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.2,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius:
+                                "50%",
+                              backgroundColor:
+                                "#16A34A",
+                            }}
+                          />
 
-                      "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                        {
-                          borderColor:
-                            "#FF7800",
+                          <Typography
+                            sx={{
+                              fontSize: 13,
+                              fontWeight: 500,
+                            }}
+                          >
+                            Entregue
+                          </Typography>
+                        </Box>
+                      </MenuItem>
 
-                          borderWidth:
-                            "1px",
-                        },
+                      <MenuItem
+                        value="CANCELADO"
+                        sx={{
+                          fontSize: 13,
+                          py: 1.2,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.2,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius:
+                                "50%",
+                              backgroundColor:
+                                "#DC2626",
+                            }}
+                          />
 
-                      "&.Mui-disabled": {
+                          <Typography
+                            sx={{
+                              fontSize: 13,
+                              fontWeight: 500,
+                            }}
+                          >
+                            Cancelado
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  {alterandoStatus ===
+                    pedidoSelecionado.id && (
+                    <Box
+                      sx={{
+                        mt: 1.5,
+
+                        px: 1.5,
+                        py: 1,
+
+                        display: "flex",
+
+                        alignItems:
+                          "center",
+
+                        gap: 1,
+
+                        borderRadius: "7px",
+
                         backgroundColor:
-                          "#F5F5F5",
-                      },
-                    }}
-                  >
-                    <MenuItem
-                      value="RECEBIDO"
-                      sx={{
-                        fontSize: 13,
-                        py: 1.2,
+                          "#FFF7ED",
+
+                        border:
+                          "1px solid #FED7AA",
                       }}
                     >
-                      <Box
+                      <CircularProgress
+                        size={15}
+                        thickness={5}
                         sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1.2,
+                          color:
+                            "#FF7800",
+                        }}
+                      />
+
+                      <Typography
+                        sx={{
+                          fontSize: 11,
+
+                          fontWeight: 600,
+
+                          color: "#C2410C",
                         }}
                       >
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius:
-                              "50%",
-                            backgroundColor:
-                              "#EA580C",
-                          }}
-                        />
+                        Salvando alteração...
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </DialogContent>
 
-                        <Typography
-                          sx={{
-                            fontSize: 13,
-                            fontWeight: 500,
-                          }}
-                        >
-                          Recebido
-                        </Typography>
-                      </Box>
-                    </MenuItem>
+              {/* RODAPÉ */}
 
-                    <MenuItem
-                      value="EM_PREPARO"
-                      sx={{
-                        fontSize: 13,
-                        py: 1.2,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1.2,
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius:
-                              "50%",
-                            backgroundColor:
-                              "#B45309",
-                          }}
-                        />
-
-                        <Typography
-                          sx={{
-                            fontSize: 13,
-                            fontWeight: 500,
-                          }}
-                        >
-                          Em preparo
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-
-                    <MenuItem
-                      value="SAIU_PARA_ENTREGA"
-                      sx={{
-                        fontSize: 13,
-                        py: 1.2,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1.2,
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius:
-                              "50%",
-                            backgroundColor:
-                              "#2563EB",
-                          }}
-                        />
-
-                        <Typography
-                          sx={{
-                            fontSize: 13,
-                            fontWeight: 500,
-                          }}
-                        >
-                          Saiu para entrega
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-
-                    <MenuItem
-                      value="ENTREGUE"
-                      sx={{
-                        fontSize: 13,
-                        py: 1.2,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1.2,
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius:
-                              "50%",
-                            backgroundColor:
-                              "#16A34A",
-                          }}
-                        />
-
-                        <Typography
-                          sx={{
-                            fontSize: 13,
-                            fontWeight: 500,
-                          }}
-                        >
-                          Entregue
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-
-                    <MenuItem
-                      value="CANCELADO"
-                      sx={{
-                        fontSize: 13,
-                        py: 1.2,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1.2,
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius:
-                              "50%",
-                            backgroundColor:
-                              "#DC2626",
-                          }}
-                        />
-
-                        <Typography
-                          sx={{
-                            fontSize: 13,
-                            fontWeight: 500,
-                          }}
-                        >
-                          Cancelado
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  </Select>
-                </FormControl>
-
-                {/* SALVANDO */}
-
-                {alterandoStatus ===
-                  pedidoSelecionado.id && (
-                  <Box
-                    sx={{
-                      mt: 1.5,
-
-                      px: 1.5,
-                      py: 1,
-
-                      display: "flex",
-
-                      alignItems:
-                        "center",
-
-                      gap: 1,
-
-                      borderRadius: "7px",
-
-                      backgroundColor:
-                        "#FFF7ED",
-
-                      border:
-                        "1px solid #FED7AA",
-                    }}
-                  >
-                    <CircularProgress
-                      size={15}
-                      thickness={5}
-                      sx={{
-                        color:
-                          "#FF7800",
-                      }}
-                    />
-
-                    <Typography
-                      sx={{
-                        fontSize: 11,
-
-                        fontWeight: 600,
-
-                        color: "#C2410C",
-                      }}
-                    >
-                      Salvando alteração...
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            </DialogContent>
-
-            {/* =================================================
-                RODAPÉ
-            ================================================== */}
-
-            <DialogActions
-              sx={{
-                px: {
-                  xs: 2.5,
-                  sm: 3.5,
-                },
-
-                py: 1.8,
-
-                borderTop:
-                  "1px solid #E5E5E5",
-
-                backgroundColor:
-                  "#FCFCFC",
-
-                justifyContent:
-                  "flex-end",
-              }}
-            >
-              <Button
-                onClick={fecharDetalhes}
+              <DialogActions
                 sx={{
-                  minWidth: 82,
+                  px: {
+                    xs: 2.5,
+                    sm: 3.5,
+                  },
 
-                  height: 38,
+                  py: 1.8,
 
-                  px: 2,
-
-                  borderRadius: "7px",
-
-                  textTransform:
-                    "none",
-
-                  fontSize: 12,
-
-                  fontWeight: 600,
-
-                  color: "#525252",
-
-                  border:
+                  borderTop:
                     "1px solid #E5E5E5",
 
                   backgroundColor:
-                    "#FFFFFF",
+                    "#FCFCFC",
 
-                  "&:hover": {
-                    backgroundColor:
-                      "#F5F5F5",
-
-                    borderColor:
-                      "#D4D4D4",
-                  },
+                  justifyContent:
+                    "flex-end",
                 }}
               >
-                Fechar
-              </Button>
-            </DialogActions>
-          </>
-        )}
+                <Button
+                  onClick={fecharDetalhes}
+                  sx={{
+                    minWidth: 82,
+
+                    height: 38,
+
+                    px: 2,
+
+                    borderRadius: "7px",
+
+                    textTransform:
+                      "none",
+
+                    fontSize: 12,
+
+                    fontWeight: 600,
+
+                    color: "#525252",
+
+                    border:
+                      "1px solid #E5E5E5",
+
+                    backgroundColor:
+                      "#FFFFFF",
+
+                    "&:hover": {
+                      backgroundColor:
+                        "#F5F5F5",
+
+                      borderColor:
+                        "#D4D4D4",
+                    },
+                  }}
+                >
+                  Fechar
+                </Button>
+              </DialogActions>
+            </>
+          )}
       </Dialog>
     </Box>
   );
@@ -2063,14 +2062,6 @@ const numeroResumo = {
   fontSize: 22,
   fontWeight: 700,
   color: "#171717",
-};
-
-const tituloModal = {
-  fontSize: 10,
-  fontWeight: 700,
-  color: "#A3A3A3",
-  textTransform: "uppercase",
-  letterSpacing: "0.6px",
 };
 
 export default Pedidos;
