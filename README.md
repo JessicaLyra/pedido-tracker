@@ -1,6 +1,6 @@
 # Pedido Tracker
 
-Sistema web para gerenciamento e acompanhamento de pedidos, desenvolvido como **desafio técnico para processo seletivo**.
+Sistema web para gerenciamento e acompanhamento de pedidos.
 
 A aplicação possui autenticação de usuários, criação e gerenciamento de pedidos e acompanhamento do status de cada pedido, com uma interface responsiva e identidade visual própria.
 
@@ -38,7 +38,7 @@ A aplicação possui autenticação de usuários, criação e gerenciamento de p
 
 ## 🎯 Objetivo do projeto
 
-Este projeto foi desenvolvido como parte de um **processo seletivo**, com o objetivo de demonstrar conhecimentos em desenvolvimento **Full Stack**, integração entre frontend e backend, autenticação, persistência de dados, criação de APIs REST e desenvolvimento de interfaces modernas.
+Este projeto foi desenvolvido com o objetivo de demonstrar conhecimentos em desenvolvimento **Full Stack**, integração entre frontend e backend, autenticação, persistência de dados, criação de APIs REST e desenvolvimento de interfaces modernas.
 
 ---
 
@@ -306,5 +306,3 @@ O código-fonte completo do projeto está disponível no GitHub:
 **Jéssica Lyra**
 
 Desenvolvedora Web com experiência em criação de aplicações, sites e soluções digitais, com atuação em desenvolvimento frontend, backend e WordPress.
-
-Projeto desenvolvido para fins de **processo seletivo e demonstração de conhecimentos em desenvolvimento Full Stack**.
