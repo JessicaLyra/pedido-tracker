@@ -16,6 +16,7 @@ import Pedidos from "./pages/Pedidos";
 import NovoPedido from "./pages/NovoPedido";
 
 import Sidebar from "./components/Sidebar";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function AppLayout() {
   const location = useLocation();
@@ -69,18 +70,30 @@ function AppLayout() {
           />
 
           <Route
-            path="/dashboard"
-            element={<Dashboard />}
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
           />
 
           <Route
             path="/pedidos"
-            element={<Pedidos />}
+            element={
+              <ProtectedRoute>
+                <Pedidos />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="/novo-pedido"
-            element={<NovoPedido />}
+            element={
+              <ProtectedRoute>
+                <NovoPedido />
+              </ProtectedRoute>
+            }
           />
 
           <Route
